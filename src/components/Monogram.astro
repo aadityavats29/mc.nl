@@ -1,0 +1,20 @@
+---
+/**
+ * The MC monogram, extracted as a single vector path from the original
+ * concept-3 artwork (Maisson Coiffure_3.pdf / Maisson Coiffure_NEW.ai).
+ * Rendered inline so it inherits currentColor and can animate as one unit.
+ * Geometry, proportions and spacing are untouched.
+ */
+import mark from '../../public/mc-monogram.svg?raw';
+
+interface Props {
+  label?: string; // accessible name; pass '' for decorative use
+  class?: string;
+}
+const { label = 'Maison Coiffure', class: className } = Astro.props;
+const svg = label
+  ? mark.replace('aria-label="Maison Coiffure"', `aria-label="${label}"`)
+  : mark.replace('role="img" aria-label="Maison Coiffure"', 'aria-hidden="true"');
+---
+
+<span class={className} set:html={svg} />

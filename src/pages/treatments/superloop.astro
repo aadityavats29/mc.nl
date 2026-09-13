@@ -1,0 +1,32 @@
+---
+import TreatmentLayout from '../../components/TreatmentLayout.astro';
+import PriceBlock from '../../components/PriceBlock.astro';
+import { superloop } from '../../data/services';
+---
+
+<TreatmentLayout
+  title="Superloop"
+  metaTitle="Superloop volumising treatment"
+  description="The Superloop at Maison Coiffure: a volumising treatment that makes hair appear fuller, from €89. The result lasts approximately six weeks."
+  lede="More volume, or help making a crown fall beautifully again."
+  ctaLabel="Ask about a Superloop"
+  waMessage="Hello Maison Coiffure, I would like to know whether a Superloop suits my hair."
+>
+  <p>
+    Do you want more volume in your hair, or help making a crown fall beautifully again? A Superloop
+    is a volumising treatment intended to make hair appear fuller. It is especially suitable when
+    the hair on top is no longer than 15 cm, and the result lasts approximately six weeks.
+  </p>
+  <p>
+    After the treatment your hair is blow-dried and styled, and the Superloop can be combined with a
+    haircut in the same visit.
+  </p>
+  <p>
+    Whether a Superloop suits your hair, and how long your appointment needs, is agreed personally
+    before booking. Send a message and we will look at it together.
+  </p>
+
+  <Fragment slot="after">
+    <PriceBlock group={superloop} headingLevel="h2" />
+  </Fragment>
+</TreatmentLayout>

@@ -1,0 +1,79 @@
+---
+import { nav } from '../data/site';
+import Monogram from './Monogram.astro';
+
+const chev =
+  '<svg class="chev" width="12" height="12" viewBox="0 0 10 10" aria-hidden="true" fill="none"><path d="M1.5 3.5 5 7l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+---
+
+<dialog class="drawer" id="menu-drawer" aria-label="Menu">
+  <div class="drawer-inner">
+    <div class="drawer-head">
+      <a class="brand" href="/" aria-label="Maison Coiffure home">
+        <Monogram label="" />
+      </a>
+      <button type="button" class="drawer-close">Close</button>
+    </div>
+
+    <nav class="drawer-nav" aria-label="Menu">
+      <ul>
+        {
+          nav.map((item, i) => {
+            if (item.children) {
+              const subId = `drawer-sub-${i}`;
+              return (
+                <li>
+                  {item.href ? (
+                    <a href={item.href}>{item.label}</a>
+                  ) : null}
+                  <button
+                    type="button"
+                    class="drawer-group-btn"
+                    aria-expanded="false"
+                    aria-controls={subId}
+                  >
+                    <span>{item.href ? `All ${item.label.toLowerCase()}` : item.label}</span>
+                    <Fragment set:html={chev} />
+                  </button>
+                  <div class="drawer-sub" id={subId} style="height: 0px">
+                    <ul>
+                      {item.children.map((c) => (
+                        <li>
+                          <a href={c.href}>{c.label}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </li>
+              );
+            }
+            return (
+              <li>
+                <a href={item.href}>{item.label}</a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </nav>
+
+    <div class="drawer-cta">
+      <a class="btn btn-primary" href="/book">Book an appointment</a>
+      <a class="btn btn-quiet" href="/treatments">Explore treatments</a>
+    </div>
+  </div>
+</dialog>
+
+<noscript>
+  <style>
+    .menu-btn { display: none !important; }
+    @media (max-width: 1099px) {
+      .primary-nav { display: block !important; margin-left: auto; }
+      .primary-nav ul { flex-wrap: wrap; gap: 12px 18px; justify-content: flex-end; }
+      .primary-nav .dropdown { position: static; opacity: 1; visibility: visible; translate: none; box-shadow: none; border: 0; padding: 0; min-width: 0; }
+      .primary-nav .dropdown .dd-note { display: none; }
+      .primary-nav .disclosure-btn { display: none; }
+      .header-inner { flex-wrap: wrap; padding-block: 10px; }
+    }
+  </style>
+</noscript>

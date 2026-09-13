@@ -1,0 +1,18 @@
+---
+import Base from '../layouts/Base.astro';
+import Monogram from '../components/Monogram.astro';
+---
+
+<Base title="Page not found" description="This page does not exist. Find your way back to Maison Coiffure.">
+  <div class="wrap section-lg" style="text-align: center; padding-block: 120px;">
+    <span style="display: inline-block; width: 72px; color: var(--primary);"><Monogram label="" /></span>
+    <h1 style="font-size: var(--size-title); margin-top: 24px;">This page does not exist</h1>
+    <p class="lede" style="margin-inline: auto;">
+      Sometimes you need a different perspective; this address is not one of ours.
+    </p>
+    <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 28px;">
+      <a class="btn btn-primary" href="/">Back to the homepage</a>
+      <a class="btn btn-quiet" href="/treatments">Explore treatments</a>
+    </div>
+  </div>
+</Base>

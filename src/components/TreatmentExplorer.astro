@@ -1,0 +1,42 @@
+---
+import { explorerRows } from '../data/explorer';
+
+interface Props {
+  idPrefix?: string;
+}
+const { idPrefix = 'ex' } = Astro.props;
+const half = Math.ceil(explorerRows.length / 2);
+const columns = [explorerRows.slice(0, half), explorerRows.slice(half)];
+const arrow =
+  '<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+---
+
+<div class="explorer-cols">
+  {
+    columns.map((col, ci) => (
+      <ul class="explorer" data-explorer>
+        {col.map((row, ri) => {
+          const descId = `${idPrefix}-d-${ci}-${ri}`;
+          return (
+            <li>
+              <a
+                class="explorer-link"
+                href={row.href}
+                data-preview={row.preview}
+                data-preview-title={row.label}
+                aria-describedby={descId}
+              >
+                <span class="explorer-name">{row.label}</span>
+                <Fragment set:html={arrow} />
+                <span class="explorer-sum">{row.summary}</span>
+              </a>
+              <span class="sr-only" id={descId}>
+                {row.preview}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    ))
+  }
+</div>

@@ -1,0 +1,55 @@
+---
+import { site, waLink } from '../data/site';
+import Monogram from './Monogram.astro';
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-cols">
+      <div class="footer-brand">
+        <Monogram label="" />
+        <span class="brand-name">Maison Coiffure</span>
+        <p style="margin-top: 12px; font-size: 0.9375rem; color: var(--muted); max-width: 30ch;">
+          A small, personal hair salon in {site.areaNote}, and on location.
+        </p>
+      </div>
+
+      <div>
+        <h4>Visit</h4>
+        <address>
+          {site.addressLine}<br />
+          {site.availability}.<br />
+          {site.walkIns}
+        </address>
+      </div>
+
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href={waLink('Hello Maison Coiffure, I would like to make an appointment.')} rel="noopener">WhatsApp for an appointment</a></li>
+          <li><a href={`tel:${site.phoneIntl}`}>{site.phoneDisplay}</a></li>
+          <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
+          <li><a href={site.instagram} rel="noopener">Instagram</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="/treatments">Treatments</a></li>
+          <li><a href="/treatments/salon-party">Salon Party</a></li>
+          <li><a href="/for-businesses/corporate-salon">Corporate Salon</a></li>
+          <li><a href="/for-businesses/care-homes">Care Homes</a></li>
+          <li><a href="/gallery">Gallery</a></li>
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-meta">
+      <span>© {year} Maison Coiffure, {site.locality}</span>
+      <span>By appointment only</span>
+    </div>
+  </div>
+</footer>

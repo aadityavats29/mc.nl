@@ -1,0 +1,218 @@
+---
+import Base from '../layouts/Base.astro';
+import Monogram from '../components/Monogram.astro';
+import Picture from '../components/Picture.astro';
+import TreatmentExplorer from '../components/TreatmentExplorer.astro';
+import { images } from '../data/images';
+import { site, waLink } from '../data/site';
+
+const quote = 'Sometimes you need a haircut. Sometimes you need a different perspective. Sometimes you need both.';
+const quoteWords = quote.split(' ');
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HairSalon',
+  name: site.name,
+  url: site.url,
+  telephone: site.phoneIntl,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: site.streetAddress,
+    addressLocality: site.locality,
+    addressCountry: 'NL',
+  },
+  sameAs: [site.instagram],
+  description:
+    'A small, personal hair salon in IJburg, Amsterdam. Haircuts, curls, colouring, hair care and optional coaching, by appointment on Wednesday, Friday and Saturday, and on location.',
+};
+---
+
+<Base
+  title="Maison Coiffure · Personal hair salon in IJburg, Amsterdam"
+  description="A small, personal hair salon in IJburg, Amsterdam. Haircuts, curls, colouring, grey-hair care, head massage and optional coaching. By appointment on Wednesday, Friday and Saturday."
+  page="home"
+  jsonLd={jsonLd}
+>
+  <!-- 1 · A calm entrance with an obvious purpose -->
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="hero-mark"><Monogram /></div>
+      <div class="hero-text">
+        <h1 class="hero-title">Personal attention, honest advice and enough time to do things properly.</h1>
+        <p class="hero-sub">
+          A small, personal hair salon in the stylist's home in IJburg, Amsterdam, and on location.
+          {site.availability}.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/treatments">Explore treatments</a>
+          <a class="btn btn-quiet" href="/book">Book an appointment</a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-media">
+      <Picture
+        image={images.heroCurls}
+        sizes="(max-width: 899px) 100vw, 48vw"
+        loading="eager"
+        fetchpriority="high"
+      />
+    </div>
+  </section>
+
+  <!-- 2 · The MC statement -->
+  <section class="section-lg quote-section">
+    <div class="wrap">
+      <blockquote style="margin: 0;">
+        <p class="mc-quote">
+          <span class="sr-only">{quote}</span>
+          {quoteWords.map((w, i) => (
+            <Fragment><span class="quote-word" aria-hidden="true">{w}</span>{i < quoteWords.length - 1 ? ' ' : ''}</Fragment>
+          ))}
+        </p>
+      </blockquote>
+      <div class="reveal" style="max-width: 60ch; margin: 40px auto 0;">
+        <p>
+          Maison Coiffure brings hairdressing and coaching together. You can simply book a haircut,
+          colour or treatment and nothing more. Or you can choose to combine your hair appointment
+          with an explicitly booked coaching session. You decide what you come for.
+        </p>
+        <a class="arrow-link" href="/about/philosophy">
+          Read the MC Philosophy
+          <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · Explore treatments -->
+  <section class="section-lg section-surface">
+    <div class="wrap">
+      <div class="reveal" style="max-width: 62ch; margin-bottom: 44px;">
+        <span class="eyebrow">Treatments</span>
+        <h2>Inviting to explore, easy to understand</h2>
+        <p class="lede">
+          Every service has a clear explanation, a transparent price and enough time reserved to do
+          it properly. Colour work always starts with a personal consultation.
+        </p>
+      </div>
+      <div class="reveal">
+        <TreatmentExplorer idPrefix="home" />
+      </div>
+      <p class="reveal" style="margin-top: 36px;">
+        <a class="arrow-link" href="/treatments">
+          See the complete catalogue, including hair care, recovery, styling and coaching
+          <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <!-- 4 · Salon Party: together, in either location -->
+  <section class="section-lg">
+    <div class="wrap split">
+      <a class="photo-frame split-media" href="/treatments/salon-party" tabindex="-1" aria-hidden="true">
+        <Picture image={images.careWaves} sizes="(max-width: 767px) 100vw, 45vw" />
+      </a>
+      <div class="reveal">
+        <span class="eyebrow">Salon Party</span>
+        <h2>Together, in either location</h2>
+        <p>
+          Invite Maison Coiffure into your home for a relaxed salon experience with friends or
+          family, or come to the salon as a group. The programme can include haircuts, styling,
+          hair treatments and Indian head massages, tailored to your gathering.
+        </p>
+        <p>
+          Tell us your preferred location, date, group size and the treatments you are interested
+          in, and we will prepare a personal quote.
+        </p>
+        <a class="btn btn-primary" href="/treatments/salon-party" style="margin-top: 10px;">Enquire about a salon party</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · Meet the hairstylist -->
+  <section class="section-lg section-surface">
+    <div class="wrap split">
+      <div class="reveal">
+        <span class="eyebrow">About the Hairstylist</span>
+        <h2>The person behind Maison Coiffure</h2>
+        <p>
+          "There's something quietly powerful about a fresh haircut or style. A new cut, colour or
+          treatment can boost confidence, inspire change, mark a new chapter in life, or simply
+          celebrate it."
+        </p>
+        <p>
+          From entrepreneur and coach to hairstylist: one journey, one goal. Helping people navigate
+          change with clarity and confidence, inside and out.
+        </p>
+        <a class="arrow-link" href="/about/hairstylists">
+          Meet your hairstylist
+          <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <a class="photo-frame split-media" href="/about/hairstylists" tabindex="-1" aria-hidden="true">
+        <Picture image={images.stylistPortrait} sizes="(max-width: 767px) 100vw, 45vw" />
+      </a>
+    </div>
+  </section>
+
+  <!-- 6 · Real work and practical next steps -->
+  <section class="section-lg">
+    <div class="wrap">
+      <div class="reveal" style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 36px;">
+        <h2 style="margin: 0;">Recent work</h2>
+        <a class="arrow-link" href="/gallery">
+          Browse the gallery
+          <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <div class="card-grid">
+        {[images.greyBob, images.colourCopper, images.curlsDefined].map((img, i) => (
+          <a class="tile-link reveal" href="/gallery" data-reveal-group="work" data-reveal-index={i}>
+            <span class="photo-frame"><Picture image={img} sizes="(max-width: 599px) 100vw, (max-width: 1023px) 50vw, 33vw" /></span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section-lg section-surface">
+    <div class="wrap split">
+      <div class="reveal">
+        <span class="eyebrow">Visit or invite us</span>
+        <h2>Practical, from the start</h2>
+        <p>
+          {site.addressLine}. Open {site.availability.toLowerCase()}.
+          {site.walkIns}
+        </p>
+        <p>
+          On location, Maison Coiffure works in {site.onLocationArea}, for salon parties, companies
+          and care homes.
+        </p>
+        <div class="hero-actions" style="margin-top: 18px;">
+          <a class="btn btn-primary" href={waLink('Hello Maison Coiffure, I would like to make an appointment.')} rel="noopener">WhatsApp for an appointment</a>
+          <a class="btn btn-quiet" href="/contact">Contact details</a>
+        </div>
+      </div>
+      <div class="reveal">
+        <h3 style="font-family: var(--font-body); font-size: 0.8125rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 700;">For businesses</h3>
+        <ul class="explorer" style="margin-top: 10px;">
+          <li>
+            <a class="explorer-link" href="/for-businesses/corporate-salon">
+              <span class="explorer-name">Corporate Salon</span>
+              <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="explorer-sum">A tailored salon day at your workplace or coworking space.</span>
+            </a>
+          </li>
+          <li>
+            <a class="explorer-link" href="/for-businesses/care-homes">
+              <span class="explorer-name">Care Homes</span>
+              <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="explorer-sum">Gentle, personal care for residents in familiar surroundings.</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</Base>

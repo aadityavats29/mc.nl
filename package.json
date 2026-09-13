@@ -1,0 +1,20 @@
+{
+  "name": "maison-coiffure",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.4.1",
+    "@fontsource/mulish": "^5.2.5",
+    "@fontsource/playfair-display": "^5.2.5",
+    "astro": "^5.13.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

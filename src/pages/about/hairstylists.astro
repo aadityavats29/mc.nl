@@ -1,0 +1,115 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import Picture from '../../components/Picture.astro';
+import { images } from '../../data/images';
+
+/*
+ * Stylist directory. With one stylist, the full profile is presented directly.
+ * The structure below (stable slug, portrait, introduction, story, specialties,
+ * services) is ready to become a portrait list when real collaborators join,
+ * without redesigning the About structure. Menu label then becomes
+ * "Our Hairstylists"; the route stays /about/hairstylists.
+ *
+ * Biography source: the personal-story material preserved in the master brief
+ * (Feedback MC.com homepage.key). The owner's display name and current
+ * qualification wording are open items; see _handoff/HANDOFF.md.
+ */
+const specialties = [
+  'Haircuts and curly haircuts',
+  'Grey-hair transitions',
+  'Hair care and recovery',
+  'Coaching alongside hairdressing',
+  'On-location services',
+];
+---
+
+<Base
+  title="About the Hairstylist"
+  description="Meet the hairstylist and founder of Maison Coiffure: entrepreneur, intercultural consultant and coach turned hairstylist, blending hairstyling with coaching in a personal home salon."
+>
+  <PageHead
+    eyebrow="About"
+    title="About the Hairstylist"
+    lede="A journey full of unexpected twists and turns, defined by trying new things and taking risks."
+    crumbs={[{ label: 'Home', href: '/' }, { label: 'About' }, { label: 'About the Hairstylist' }]}
+  />
+
+  <div class="wrap section">
+    <div class="split" style="align-items: start;">
+      <div>
+        <div class="photo-frame" style="aspect-ratio: 4 / 5;">
+          <Picture image={images.stylistPortrait} sizes="(max-width: 767px) 100vw, 45vw" loading="eager" />
+        </div>
+        <div class="note-box" style="margin-top: 20px;">
+          <h4>Specialties</h4>
+          <ul style="margin: 0; padding-left: 18px;">
+            {specialties.map((s) => <li>{s}</li>)}
+          </ul>
+          <p style="margin-top: 14px;">
+            <a class="arrow-link" href="/book">
+              Book an appointment
+              <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <article class="prose" id="my-story">
+        <h2 style="margin-top: 0;">My Story</h2>
+        <p>
+          There's something quietly powerful about a fresh haircut or style. As Coco Chanel once
+          said, "A woman who cuts her hair is about to change her life." A new cut, colour, or
+          treatment can boost confidence, inspire change, mark a new chapter in life, or simply
+          celebrate it. This transformation, both inside and out, mirrors the way I approach my
+          work, helping individuals and businesses navigate change with clarity and confidence.
+        </p>
+        <p>
+          My journey has been full of unexpected twists and turns, but it has always been defined by
+          trying new things and taking risks. I am not for nothing an entrepreneur at heart, guided
+          by curiosity, strategic thinking, and a passion for fostering collaboration. In 2014, I
+          co-founded THEY VISUALIZE VALUE in India, a brand consulting and marketing agency, and
+          became the Managing Director. Since then, I have played a key role in driving the
+          strategic and financial growth of the company, ensuring smooth business operations,
+          supporting team development, and overseeing high-level content creation.
+        </p>
+        <p>
+          Through my work, I gradually became involved in intercultural consultancy, a field I
+          hadn't initially set out to pursue but naturally evolved into. Having lived in India for
+          six years and worked there for over 14 years, I've witnessed firsthand the challenges of
+          cross-cultural collaboration. As I worked with European and Indian teams struggling to
+          understand one another, I found myself in the middle: listening, advising, and bridging
+          cultural gaps. Now, I support businesses and individuals navigating cultural complexities,
+          whether it's expats adapting to new work environments or multinational teams striving for
+          smoother collaboration.
+        </p>
+        <p>
+          While I continue to lead THEY, now in The Netherlands, my passion for helping people
+          navigate change has expanded beyond the corporate world. I am currently training to become
+          a registered therapist and coach, with certification expected in 2027. This step felt like
+          a natural progression from my consulting work, allowing me to help individuals through
+          personal, professional, and cultural transitions.
+        </p>
+        <p>
+          Most recently, I embarked on a hairstyling certification at the Nederlands
+          Kappersakademie, where I discovered a unique opportunity to blend hairstyling with
+          coaching. At Maison Coiffure, I offer bespoke hair transformations paired with tailored
+          coaching sessions, helping clients embrace both their inner and outer changes with
+          confidence.
+        </p>
+        <p>
+          Whether in business operations, intercultural consultancy, coaching, or hairstyling, my
+          goal remains the same: to empower people through change, ensuring they have the tools,
+          clarity, and confidence to navigate life's transitions with ease.
+        </p>
+
+        <p style="margin-top: 2em;">
+          <a class="arrow-link" href="/about/philosophy">
+            What that means for your appointment: the MC Philosophy
+            <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </p>
+      </article>
+    </div>
+  </div>
+</Base>

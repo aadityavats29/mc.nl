@@ -1,0 +1,180 @@
+---
+/**
+ * On-location quote enquiry, using the required fields from the September
+ * booking specification. Submitting composes a WhatsApp message to the
+ * salon's real number; nothing here claims a confirmed booking, and no
+ * availability is invented.
+ */
+import { site } from '../data/site';
+
+interface Props {
+  /** Preselect: 'Salon Party' | 'Organisation' | 'Care Home' */
+  requestType?: string;
+  heading?: string;
+}
+const { requestType, heading = 'Request a quote' } = Astro.props;
+const types = ['Salon Party', 'Organisation', 'Care Home'];
+const treatments = [
+  'Haircuts',
+  'Styling / Signature Blow-Dry',
+  'Hair treatments',
+  'WellaPlex',
+  'Indian Head Massage',
+  'Colour (consultation required first)',
+];
+const facilities = [
+  'Warm water available',
+  'Suitable chair and table',
+  'Power socket nearby',
+  'Lift or step-free access',
+];
+---
+
+<form
+  class="enquiry-form"
+  data-wa-form
+  data-wa-base={site.whatsappBase}
+  data-wa-intro={`Hello Maison Coiffure, I would like to request a quote.`}
+  novalidate={false}
+>
+  <h2 id="enquire">{heading}</h2>
+  <p class="note-box plain" style="margin-top:0">
+    A submitted request is a quote enquiry, not a confirmed appointment. Maison Coiffure will contact
+    you to discuss the programme, timing and price. Submitting opens WhatsApp with your details ready
+    to send; nothing is sent until you send it yourself.
+  </p>
+
+  <div class="form-grid">
+    <div class="field">
+      <label for="ef-type">Type of request</label>
+      <select id="ef-type" name="type" data-label="Type of request" required>
+        {types.map((t) => <option value={t} selected={t === requestType}>{t}</option>)}
+      </select>
+    </div>
+    <div class="field">
+      <label for="ef-org">Organisation or host name</label>
+      <input id="ef-org" name="org" data-label="Organisation or host" type="text" required autocomplete="organization" />
+    </div>
+    <div class="field">
+      <label for="ef-contact">Contact person</label>
+      <input id="ef-contact" name="contact" data-label="Contact person" type="text" required autocomplete="name" />
+    </div>
+    <div class="field">
+      <label for="ef-email">Email address</label>
+      <input id="ef-email" name="email" data-label="Email" type="email" required autocomplete="email" />
+    </div>
+    <div class="field">
+      <label for="ef-phone">Telephone number</label>
+      <input id="ef-phone" name="phone" data-label="Telephone" type="tel" required autocomplete="tel" />
+    </div>
+    <div class="field">
+      <label for="ef-address">Full address or location</label>
+      <input id="ef-address" name="address" data-label="Location" type="text" required autocomplete="street-address" />
+    </div>
+    <div class="field">
+      <label for="ef-date">Preferred date</label>
+      <input id="ef-date" name="date" data-label="Preferred date" type="date" required />
+    </div>
+    <div class="field">
+      <label for="ef-altdate">Alternative date <span class="hint">(optional)</span></label>
+      <input id="ef-altdate" name="altdate" data-label="Alternative date" type="date" />
+    </div>
+    <div class="field">
+      <label for="ef-time">Preferred start and finish time</label>
+      <input id="ef-time" name="time" data-label="Preferred times" type="text" required placeholder="e.g. 14:00 to 18:00" />
+    </div>
+    <div class="field">
+      <label for="ef-people">Estimated number of people</label>
+      <input id="ef-people" name="people" data-label="Estimated people" type="number" min="1" required />
+    </div>
+
+    <fieldset class="field full">
+      <legend>Treatments of interest</legend>
+      <div class="choice-row">
+        {
+          treatments.map((t, i) => (
+            <label class="choice">
+              <input type="checkbox" name={`tr-${i}`} data-label={t} value="yes" /> {t}
+            </label>
+          ))
+        }
+      </div>
+    </fieldset>
+
+    <fieldset class="field full">
+      <legend>Facilities at the location</legend>
+      <div class="choice-row">
+        {
+          facilities.map((f, i) => (
+            <label class="choice">
+              <input type="checkbox" name={`fa-${i}`} data-label={f} value="yes" /> {f}
+            </label>
+          ))
+        }
+      </div>
+    </fieldset>
+
+    <div class="field full">
+      <label for="ef-parking">Parking or loading information <span class="hint">(optional)</span></label>
+      <input id="ef-parking" name="parking" data-label="Parking/loading" type="text" />
+    </div>
+
+    <div class="field full" data-cond="Salon Party">
+      <label for="ef-payment">Would you like individual guests to pay for their own treatments, or one total invoice?</label>
+      <select id="ef-payment" name="payment" data-label="Payment preference">
+        <option value="">Please choose</option>
+        <option>Guests pay individually</option>
+        <option>One total invoice</option>
+        <option>Not sure yet</option>
+      </select>
+    </div>
+
+    <div class="field full" data-cond="Care Home">
+      <label for="ef-support">Mobility, sensory, cognitive or other support needs we should take into account</label>
+      <textarea id="ef-support" name="support" data-label="Support needs"></textarea>
+    </div>
+
+    <div class="field full" data-cond="Organisation Care Home">
+      <label for="ef-admin">Is a purchase order, supplier registration or recurring schedule required?</label>
+      <input id="ef-admin" name="admin" data-label="Purchase order / registration / recurring" type="text" />
+    </div>
+
+    <div class="field full">
+      <label for="ef-msg">Additional message or special requirements <span class="hint">(optional)</span></label>
+      <textarea id="ef-msg" name="message" data-label="Message"></textarea>
+    </div>
+  </div>
+
+  <p style="margin-top: 24px;">
+    <button class="btn btn-primary" type="submit">Send enquiry via WhatsApp</button>
+  </p>
+  <noscript>
+    <p class="note-box">
+      To send this enquiry, contact Maison Coiffure directly on
+      <a href={`tel:${site.phoneIntl}`}>{site.phoneDisplay}</a> (WhatsApp) or
+      <a href={`mailto:${site.email}`}>{site.email}</a> with the details above.
+    </p>
+  </noscript>
+</form>
+
+<script is:inline>
+  /* Show conditional fields for the selected request type. */
+  (function () {
+    var forms = document.querySelectorAll('.enquiry-form');
+    forms.forEach(function (form) {
+      var typeSel = form.querySelector('select[name="type"]');
+      if (!typeSel) return;
+      function update() {
+        form.querySelectorAll('[data-cond]').forEach(function (el) {
+          var show = el.getAttribute('data-cond').indexOf(typeSel.value) !== -1;
+          el.hidden = !show;
+          el.querySelectorAll('input, select, textarea').forEach(function (f) {
+            f.disabled = !show;
+          });
+        });
+      }
+      typeSel.addEventListener('change', update);
+      update();
+    });
+  })();
+</script>

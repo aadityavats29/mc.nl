@@ -1,0 +1,47 @@
+---
+import TreatmentLayout from '../../components/TreatmentLayout.astro';
+import PriceBlock from '../../components/PriceBlock.astro';
+import {
+  colourConsultation,
+  permanentColour,
+  semiPermanentColour,
+  toner,
+} from '../../data/services';
+import { images } from '../../data/images';
+import { waLink } from '../../data/site';
+---
+
+<TreatmentLayout
+  title="Colouring"
+  metaTitle="Colouring: permanent, semi-permanent and toner"
+  description="Colouring at Maison Coiffure: permanent colour from €49, semi-permanent colour from €39 and toners from €30, always preceded by a personal €25 consultation that is deducted from the agreed treatment."
+  lede="Colour that suits your hair, agreed together before anything touches it."
+  image={images.colourCopper}
+  ctaLabel="Book a colour consultation"
+  waMessage="Hello Maison Coiffure, I would like to book a Colour and Highlight Consultation."
+>
+  <p>
+    Permanent colour provides lasting colour change and grey coverage. Semi-permanent colour adds
+    tone, depth and richness and fades gradually. A toner makes a softer, translucent tonal
+    adjustment, neutralises unwanted warmth or refreshes shine. Neither semi-permanent colour nor
+    toner makes hair lighter.
+  </p>
+  <p>
+    Before your first colour, toner or highlight treatment we assess your hair history, current
+    condition and desired result in a personal consultation, then agree the service, the time it
+    needs and the estimated price. The €25 consultation fee is fully deducted from the agreed
+    treatment when you proceed.
+  </p>
+  <p>
+    Not sure what to book?
+    <a href={waLink('Hello Maison Coiffure, I have a question about colouring.')} rel="noopener">
+      Contact Maison Coiffure via WhatsApp</a> for guidance.
+  </p>
+
+  <Fragment slot="after">
+    <PriceBlock group={colourConsultation} headingLevel="h2" />
+    <PriceBlock group={permanentColour} headingLevel="h2" />
+    <PriceBlock group={semiPermanentColour} headingLevel="h2" />
+    <PriceBlock group={toner} headingLevel="h2" />
+  </Fragment>
+</TreatmentLayout>

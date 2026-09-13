@@ -1,0 +1,37 @@
+---
+import TreatmentLayout from '../../components/TreatmentLayout.astro';
+import PriceBlock from '../../components/PriceBlock.astro';
+import { curlyHaircuts, hairCare } from '../../data/services';
+import { images } from '../../data/images';
+const curlTreatment = hairCare.find((g) => g.id === 'curl-treatment')!;
+---
+
+<TreatmentLayout
+  title="Curls"
+  metaTitle="Curly haircuts and curl care"
+  description="Curly haircuts at Maison Coiffure: cut dry to enhance your natural curl pattern, €49 including curl consultation, wash, curl care and styling. Curl treatments from €39."
+  lede="Curly hair needs a different approach from straight hair."
+  image={images.curlsLong}
+  waMessage="Hello Maison Coiffure, I would like to book a curly haircut."
+>
+  <p>
+    It is about tailoring the cut to your unique curl pattern, understanding its natural movement,
+    shape and texture, and enhancing it rather than flattening it. We take time to observe how your
+    hair naturally falls and cut curls dry, so the pattern stays visible. The aim is a shape that
+    suits your face, style and lifestyle.
+  </p>
+  <p>
+    Expect a calm, personalised treatment, advice on caring for and styling your curls, and a
+    haircut that allows your natural texture to shine.
+  </p>
+  <p>
+    Alongside the cut, curl care nourishes and hydrates the hair, reduces frizz and supports natural
+    definition. The curly haircut and the curl treatment are separate services, so you can choose
+    what your hair needs.
+  </p>
+
+  <Fragment slot="after">
+    <PriceBlock group={curlyHaircuts} headingLevel="h2" />
+    <PriceBlock group={curlTreatment} headingLevel="h2" />
+  </Fragment>
+</TreatmentLayout>

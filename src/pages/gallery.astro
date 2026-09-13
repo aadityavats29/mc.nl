@@ -1,0 +1,40 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import Picture from '../components/Picture.astro';
+import { galleryImages } from '../data/images';
+import { site } from '../data/site';
+
+/* Real Maison Coiffure work. No before/after pairings are claimed: the owner
+   has not yet labelled pairs or confirmed publication permissions, so images
+   are presented individually. See _handoff/HANDOFF.md. */
+---
+
+<Base
+  title="Gallery"
+  description="Recent work from Maison Coiffure: haircuts, curls, colour and grey-hair transitions, photographed in and around the salon."
+>
+  <PageHead
+    eyebrow="Gallery"
+    title="Recent work"
+    lede="Real hair, real clients, no filters: haircuts, curls, colour and grey-hair care from the Maison Coiffure chair."
+    crumbs={[{ label: 'Home', href: '/' }, { label: 'Gallery' }]}
+  />
+
+  <div class="wrap section">
+    <div class="gallery-grid">
+      {galleryImages.map((img) => (
+        <figure>
+          <span class="photo-frame">
+            <Picture image={img} sizes="(max-width: 479px) 100vw, (max-width: 899px) 50vw, 33vw" />
+          </span>
+        </figure>
+      ))}
+    </div>
+    <p class="note-box" style="margin-top: 40px; max-width: 62ch;">
+      More of the day-to-day lives on
+      <a href={site.instagram} rel="noopener">Instagram</a>. If your hair appears here and you would
+      like it taken down, <a href="/contact">let us know</a> and it will be.
+    </p>
+  </div>
+</Base>

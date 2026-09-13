@@ -1,0 +1,48 @@
+---
+import type { ServiceGroup } from '../data/services';
+import { priceLabel } from '../data/services';
+import { globalPriceCondition } from '../data/site';
+
+interface Props {
+  group: ServiceGroup;
+  headingLevel?: 'h2' | 'h3';
+}
+const { group, headingLevel = 'h3' } = Astro.props;
+const H = headingLevel;
+const hasDurations = group.options.some((o) => o.duration);
+---
+
+<div class="price-block" id={group.id}>
+  <H>{group.title}</H>
+  {group.sharedCopy && <p class="shared-copy">{group.sharedCopy}</p>}
+
+  <table class="price-table">
+    <thead class="sr-only">
+      <tr>
+        <th scope="col">Service</th>
+        <th scope="col" class="copy-cell">Description</th>
+        <th scope="col">Price</th>
+        {hasDurations && <th scope="col" class="h-dur">Duration</th>}
+      </tr>
+    </thead>
+    <tbody>
+      {
+        group.options.map((o) => (
+          <tr>
+            <td class="svc">{o.name}</td>
+            <td class="copy copy-cell">{o.copy}</td>
+            <td class="price">{priceLabel(o)}</td>
+            {hasDurations && <td class="dur">{o.duration ?? ''}</td>}
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+
+  {group.notes && group.notes.map((n) => <p class="note-box plain" style="margin-block: 1rem 0;">{n}</p>)}
+  {
+    group.showGlobalCondition && (
+      <p class="note-box" style="margin-block: 1.2rem 0;">{globalPriceCondition}</p>
+    )
+  }
+</div>

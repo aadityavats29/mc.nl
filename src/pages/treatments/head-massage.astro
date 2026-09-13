@@ -1,0 +1,27 @@
+---
+import TreatmentLayout from '../../components/TreatmentLayout.astro';
+import PriceBlock from '../../components/PriceBlock.astro';
+import { headMassage } from '../../data/services';
+---
+
+<TreatmentLayout
+  title="Head Massage"
+  metaTitle="Indian Head Massage"
+  description="Indian Head Massage at Maison Coiffure: €39 for 30 minutes or €55 for 45 minutes of unhurried attention for the scalp, temples, neck and shoulders."
+  lede="A relaxing massage for the scalp, temples, neck and upper shoulders."
+  waMessage="Hello Maison Coiffure, I would like to book an Indian Head Massage."
+>
+  <p>
+    An Indian Head Massage helps release tension and create a deep sense of calm. In the quiet of a
+    small home salon, without rows of chairs or background bustle, half an hour of focused attention
+    can do a remarkable amount.
+  </p>
+  <p>
+    The extended massage allows more time for the neck and shoulders, where most of us hold the
+    day's tension. Both versions combine beautifully with a haircut or treatment in the same visit.
+  </p>
+
+  <Fragment slot="after">
+    <PriceBlock group={headMassage} headingLevel="h2" />
+  </Fragment>
+</TreatmentLayout>

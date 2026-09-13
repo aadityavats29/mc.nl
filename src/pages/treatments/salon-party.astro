@@ -1,0 +1,57 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import Picture from '../../components/Picture.astro';
+import EnquiryForm from '../../components/EnquiryForm.astro';
+import { images } from '../../data/images';
+---
+
+<Base
+  title="Salon Party"
+  description="A Salon Party with Maison Coiffure: a relaxed salon experience with friends or family, at your home or at the salon. Haircuts, styling, treatments and head massages, arranged by personal quote."
+>
+  <PageHead
+    eyebrow="Treatments"
+    title="Salon Party"
+    lede="A relaxed salon experience with the people you like most, at your home or at Maison Coiffure."
+    crumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'Treatments', href: '/treatments' },
+      { label: 'Salon Party' },
+    ]}
+  />
+
+  <div class="wrap section">
+    <div class="split" style="align-items: start;">
+      <article class="prose">
+        <p>
+          Invite Maison Coiffure into your home for a relaxed salon experience with friends or
+          family. A gathering can include haircuts, styling, nourishing hair treatments, WellaPlex
+          and Indian Head Massage, with hair analysis, home-care advice and styling tips tailored to
+          the group. It suits birthdays, life transitions, bridal showers or simply a shared evening
+          of care.
+        </p>
+        <p>
+          As the host you provide the setting, drinks and snacks; Maison Coiffure brings a
+          washbasin, towels and products, and the group chooses a focus beforehand. Colour work on
+          location requires a prior consultation, so the appropriate products can be prepared.
+        </p>
+
+        <h2>Two ways to gather</h2>
+        <p><strong>At your home.</strong> The salon comes to you, and the evening stays entirely yours.</p>
+        <p><strong>At Maison Coiffure.</strong> Come to the salon as a group and let the home-salon calm do its work.</p>
+        <p>
+          Both are enquiry preferences rather than promises of availability: tell us your preferred
+          location, date, group size and the treatments you are interested in, and we will prepare a
+          personal quote for your gathering.
+        </p>
+      </article>
+      <div class="photo-frame" style="aspect-ratio: 4 / 5;">
+        <Picture image={images.careWaves} sizes="(max-width: 767px) 100vw, 45vw" />
+      </div>
+    </div>
+
+    <hr style="margin-block: 48px;" />
+    <EnquiryForm requestType="Salon Party" heading="Request a salon party quote" />
+  </div>
+</Base>

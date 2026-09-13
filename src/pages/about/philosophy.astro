@@ -1,0 +1,116 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import Picture from '../../components/Picture.astro';
+import { images } from '../../data/images';
+
+/* Text: the final September About Maison Coiffure copy (About FINAL_Sep 2026),
+   reproduced from the preserved master. The rejected V2 page 15 text is not used. */
+---
+
+<Base
+  title="MC Philosophy"
+  description="About Maison Coiffure: a small, personal home salon in IJburg, Amsterdam that brings hairdressing and optional, explicitly booked coaching together. You decide what you come for."
+>
+  <PageHead
+    eyebrow="About"
+    title="MC Philosophy"
+    lede="Maison Coiffure brings two things together that may seem unusual at first: hairdressing and coaching."
+    crumbs={[{ label: 'Home', href: '/' }, { label: 'About' }, { label: 'MC Philosophy' }]}
+  />
+
+  <div class="wrap section">
+    <div class="split" style="align-items: start;">
+      <article class="prose">
+        <p>
+          You can simply book a haircut, colour or treatment and nothing more. But you can also
+          choose to combine your hair appointment with a professional coaching session. Because
+          strangely enough, the hairdresser's chair can be a very good place to talk.
+        </p>
+        <p>
+          You're not sitting across from someone in a consulting room. You're doing something for
+          yourself. There is time. And while I'm working with your hair, we can work on whatever is
+          occupying your mind.
+        </p>
+        <p>
+          That might be a change in your career or relationship. A decision you can't quite make.
+          Adjusting to another culture. Patterns you keep running into. Or simply that feeling of
+          knowing something needs to change, without knowing what yet.
+        </p>
+        <p>
+          That's where coaching at Maison Coiffure is different from a good conversation with your
+          hairdresser. It is an actual coaching session, with your question at the centre of it. I
+          listen, ask questions, challenge you where useful and help you explore what may be
+          underneath the problem you came in with.
+        </p>
+        <p>All while cutting your hair, if that's what you've booked.</p>
+        <p>
+          But not every haircut needs a deeper meaning. If you simply want a great cut, beautiful
+          colour, help with your curls or a treatment for damaged hair, that's exactly what we'll
+          do.
+        </p>
+        <p>
+          And sometimes it happens the other way around. You book a normal hair appointment and,
+          somewhere between the shampoo and the scissors, we stumble upon something bigger. I won't
+          turn that into an unsolicited coaching session. But if I think I can help, I may tell you.
+          You can then decide whether you'd like to book a separate coaching session another time.
+          You decide what you come for.
+        </p>
+
+        <h2>Why hair and coaching?</h2>
+        <p>
+          I came to hairdressing later in life, after many years as an entrepreneur, consultant and
+          coach. I'm also training to become a registered therapist. The combination made more sense
+          to me than I initially expected.
+        </p>
+        <p>
+          People often change their hair when something else is changing too. A new beginning. Going
+          naturally grey. Recovering from a difficult period. Starting a new job. Ending a
+          relationship. Becoming more comfortable with who they are. But you don't need to be going
+          through a life-changing event to sit in my chair.
+        </p>
+
+        <h2>Not quite your typical salon</h2>
+        <p>
+          Maison Coiffure is based in my home, which I have partly transformed into a salon. It has
+          everything I need to do my work properly, without feeling like a traditional salon. It's
+          small, informal and cosy. No rows of chairs and no feeling that someone is waiting for you
+          to leave.
+        </p>
+        <p>
+          And if you'd rather stay in your own surroundings, I can come to you. I also provide
+          hairdressing services on location, including at homes, companies and care homes.
+        </p>
+        <p>Maison Coiffure is ultimately built around one simple idea:</p>
+        <p>
+          <strong>
+            You don't have to choose between taking care of how you look and taking care of what's
+            going on inside.
+          </strong>
+        </p>
+        <p><strong>But you absolutely can.</strong></p>
+
+        <p style="margin-top: 2em;">
+          <a class="arrow-link" href="/about/hairstylists">
+            Curious who is behind the chair? Meet the hairstylist
+            <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+        </p>
+      </article>
+
+      <div>
+        <div class="photo-frame" style="aspect-ratio: 4 / 5;">
+          <Picture image={images.heroCurls} sizes="(max-width: 767px) 100vw, 45vw" />
+        </div>
+        <div class="note-box" style="margin-top: 20px;">
+          <h4>Coaching is always your choice</h4>
+          <p>
+            Ordinary listening and personal attention are part of every appointment and are never
+            charged as coaching. A coaching session is something you explicitly book, at a clear
+            price, in the <a href="/treatments#coaching-section">treatments catalogue</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Base>

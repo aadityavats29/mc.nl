@@ -1,0 +1,166 @@
+---
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import { bookingCategories, priceLabel } from '../data/services';
+import { hairLengths, globalPriceCondition, site } from '../data/site';
+
+/*
+ * Booking works via WhatsApp: the form composes a message with the visitor's
+ * request. A submitted request is an appointment REQUEST, not a confirmed
+ * booking; no availability, slots or automatic confirmation are simulated.
+ * Colour, toner, highlight and Gracefully Grey treatments stay
+ * consultation-led, matching the September booking specification.
+ */
+/* Consultation gate: actual colour, toner, highlight and Gracefully Grey
+ * treatments cannot be requested directly; only their consultations appear
+ * here. The treatment itself is booked after the salon approves the agreed
+ * plan, price and duration. */
+const gatedGroupIds = new Set([
+  'permanent-colour',
+  'semi-permanent-colour',
+  'toner',
+  'foil-highlights',
+  'cap-highlights',
+]);
+const requestable = bookingCategories
+  .map((cat) => ({
+    label: cat.label,
+    groups: cat.groups
+      .map((g) => ({
+        ...g,
+        options: gatedGroupIds.has(g.id)
+          ? []
+          : g.options.filter((o) => o.priceType !== 'quote'),
+      }))
+      .filter((g) => g.options.length > 0),
+  }))
+  .filter((cat) => cat.groups.length > 0);
+
+const steps = [
+  { t: 'Treatment', d: 'Choose what you would like; prices and durations are in the catalogue.' },
+  { t: 'Details', d: 'Tell us your hair length and anything we should know.' },
+  { t: 'Date', d: 'Suggest days or times that suit you; we are open Wednesday, Friday and Saturday.' },
+  { t: 'Confirm', d: 'We reply personally to agree the exact time. Your request becomes an appointment once we confirm it.' },
+];
+---
+
+<Base
+  title="Book an appointment"
+  description="Request an appointment at Maison Coiffure via WhatsApp. Transparent prices, hair-length guidance and consultation-first colour work. Open Wednesday, Friday and Saturday."
+>
+  <PageHead
+    eyebrow="Book"
+    title="Request an appointment"
+    lede="Booking is personal here, like everything else: send your request via WhatsApp and we agree the time together. A request is not yet a confirmed appointment."
+    crumbs={[{ label: 'Home', href: '/' }, { label: 'Book an appointment' }]}
+  />
+
+  <div class="wrap section">
+    <ol style="list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 20px;" class="booking-steps">
+      {steps.map((s, i) => (
+        <li>
+          <span class="eyebrow" style="margin-bottom: 6px;">Step {i + 1}</span>
+          <h3 style="font-size: 1.25rem; margin-bottom: 4px;">{s.t}</h3>
+          <p style="font-size: 0.9375rem; color: var(--muted);">{s.d}</p>
+        </li>
+      ))}
+    </ol>
+    <style>
+      @media (max-width: 899px) { .booking-steps { grid-template-columns: repeat(2, minmax(0,1fr)) !important; } }
+      @media (max-width: 479px) { .booking-steps { grid-template-columns: 1fr !important; } }
+    </style>
+
+    <hr style="margin-block: 40px;" />
+
+    <div class="split" style="align-items: start;">
+      <form
+        data-wa-form
+        data-wa-base={site.whatsappBase}
+        data-wa-intro="Hello Maison Coiffure, I would like to request an appointment."
+      >
+        <h2>Your request</h2>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="bk-service">Treatment</label>
+            <select id="bk-service" name="service" data-label="Treatment" required>
+              <option value="">Please choose a treatment</option>
+              <!-- Colour, toner, highlight and Gracefully Grey treatments are booked
+                   after their consultation; only the consultations are listed here. -->
+              {requestable.map((cat) => (
+                <optgroup label={cat.label}>
+                  {cat.groups.flatMap((g) =>
+                    g.options.map((o) => (
+                      <option value={`${g.title}: ${o.name} (${priceLabel(o)})`}>
+                        {g.title === o.name ? o.name : `${g.title}, ${o.name}`} · {priceLabel(o)}
+                      </option>
+                    ))
+                  )}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+          <div class="field">
+            <label for="bk-length">Hair length <span class="hint">(where relevant)</span></label>
+            <select id="bk-length" name="length" data-label="Hair length">
+              <option value="">Not sure / not relevant</option>
+              {hairLengths.map((l) => <option>{l.name}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="bk-name">Your name</label>
+            <input id="bk-name" name="name" data-label="Name" type="text" required autocomplete="name" />
+          </div>
+          <div class="field full">
+            <label for="bk-days">Preferred days or times <span class="hint">(Wednesday, Friday or Saturday)</span></label>
+            <input id="bk-days" name="days" data-label="Preferred days/times" type="text" placeholder="e.g. Friday afternoon, or Saturday 21 September" />
+          </div>
+          <div class="field full">
+            <label for="bk-notes">Notes for Maison Coiffure <span class="hint">(optional)</span></label>
+            <textarea id="bk-notes" name="notes" data-label="Notes"></textarea>
+          </div>
+        </div>
+        <p style="margin-top: 22px;">
+          <button class="btn btn-primary" type="submit">Send request via WhatsApp</button>
+        </p>
+        <p class="note-box plain" style="font-size: 0.875rem;">
+          Submitting opens WhatsApp with your request ready to send. Your appointment is agreed and
+          confirmed in the conversation that follows; sending the message does not reserve a slot.
+        </p>
+        <noscript>
+          <p class="note-box">
+            To request an appointment, message Maison Coiffure directly on
+            <a href={`tel:${site.phoneIntl}`}>{site.phoneDisplay}</a> (WhatsApp) with your preferred
+            treatment and days.
+          </p>
+        </noscript>
+      </form>
+
+      <aside>
+        <div class="note-box">
+          <h4>Colour is agreed in person first</h4>
+          <p>
+            A consultation is required before a first colour, toner, highlight or Gracefully Grey
+            treatment, and before major colour changes, colour corrections and hair that has
+            previously been coloured, lightened or chemically treated. The €25 consultation fee is
+            fully deducted from the agreed treatment. Book the consultation first; the treatment is
+            then booked at the agreed price and duration.
+          </p>
+        </div>
+        <div class="note-box">
+          <h4>Hair length, in plain words</h4>
+          {hairLengths.map((l) => (
+            <p style="margin-bottom: 6px; font-size: 0.9375rem;"><strong>{l.name}:</strong> {l.def}</p>
+          ))}
+        </div>
+        <div class="note-box">
+          <h4>Good to know</h4>
+          <p style="font-size: 0.9375rem;">{globalPriceCondition}</p>
+          <p style="font-size: 0.9375rem; margin-top: 10px;">
+            Please tell us before your appointment about allergies, scalp conditions, sensitivities,
+            medication or previous reactions to colouring products.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+</Base>

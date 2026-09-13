@@ -1,0 +1,39 @@
+---
+import TreatmentLayout from '../../components/TreatmentLayout.astro';
+import PriceBlock from '../../components/PriceBlock.astro';
+import { foilHighlights, capHighlights } from '../../data/services';
+import { images } from '../../data/images';
+---
+
+<TreatmentLayout
+  title="Highlights / Lowlights"
+  metaTitle="Highlights and lowlights, toner included"
+  description="Foil highlights from €85 and cap highlights from €59 at Maison Coiffure, always including a finishing toner. Lowlights are planned personally in consultation."
+  lede="Light, dimension and depth, with the finishing toner included in every price."
+  image={images.highlightsBlonde}
+  ctaLabel="Book a colour consultation"
+  waMessage="Hello Maison Coiffure, I would like to book a Colour and Highlight Consultation for highlights."
+>
+  <p>
+    Foil highlights create carefully placed lighter sections and dimension throughout the hair. Cap
+    highlights create evenly distributed fine highlights and suit short hair and bobs that remain
+    above the shoulders. In both cases a finishing toner is an essential part of the treatment,
+    included in the displayed price and the reserved time, so the result is refined rather than
+    unfinished.
+  </p>
+  <p>
+    Lowlights add depth instead of light. They are planned personally: in your consultation we look
+    at your current colour, condition and desired result and agree the right combination, time and
+    estimate. Lowlights also play a role in the
+    <a href="/treatments/grey-hair">Gracefully Grey</a> transition plans.
+  </p>
+  <p>
+    A consultation is required before your first highlight treatment; the €25 fee is fully deducted
+    from the agreed treatment.
+  </p>
+
+  <Fragment slot="after">
+    <PriceBlock group={foilHighlights} headingLevel="h2" />
+    <PriceBlock group={capHighlights} headingLevel="h2" />
+  </Fragment>
+</TreatmentLayout>

@@ -1,0 +1,75 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Drawer from '../components/Drawer.astro';
+import { site } from '../data/site';
+
+interface Props {
+  title: string;
+  description: string;
+  page?: string; // 'home' enables the hero entrance decision
+  jsonLd?: object;
+}
+const { title, description, page, jsonLd } = Astro.props;
+const fullTitle = page === 'home' ? title : `${title} · ${site.name}`;
+---
+
+<!doctype html>
+<html lang="en-GB" data-page={page}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={new URL(Astro.url.pathname.replace(/\/$/, '') || '/', site.url).href} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <script is:inline>
+      /* Motion gate: runs before paint. Content is visible by default; hidden
+         initial states apply only when motion is enabled here (js-motion) and
+         the controller confirms it is ready (mjs). Hero entrance plays once
+         per session and never on back/anchor navigation or reduced motion. */
+      (function () {
+        try {
+          var d = document.documentElement;
+          var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (reduced) return;
+          d.classList.add('js-motion');
+          if (d.getAttribute('data-page') === 'home' && !location.hash) {
+            var nav = performance.getEntriesByType('navigation')[0];
+            var back = nav && nav.type === 'back_forward';
+            if (!back && !sessionStorage.getItem('mc-hero-played')) {
+              d.classList.add('hero-anim');
+              sessionStorage.setItem('mc-hero-played', '1');
+              document.addEventListener('DOMContentLoaded', function () {
+                var hero = document.querySelector('.hero');
+                if (!hero) return;
+                requestAnimationFrame(function () {
+                  requestAnimationFrame(function () {
+                    hero.classList.add('entrance-in');
+                  });
+                });
+              });
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script src="/scripts/motion.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header />
+    <Drawer />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

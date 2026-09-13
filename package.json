@@ -10,8 +10,8 @@
     "start": "node ./dist/server/entry.mjs"
   },
   "dependencies": {
-    "@astrojs/node": "^9.5.5",
     "@astrojs/sitemap": "^3.4.1",
+    "@astrojs/vercel": "^9.0.4",
     "@fontsource/mulish": "^5.2.5",
     "@fontsource/playfair-display": "^5.2.5",
     "astro": "^5.13.0",

@@ -1,34 +1,48 @@
 ---
 import Base from '../../layouts/Base.astro';
 import PageHead from '../../components/PageHead.astro';
+import MediaImg from '../../components/MediaImg.astro';
+import { modeOf, blogPostsPub } from '../../lib/pub';
+import { getContent } from '../../lib/content';
 
-/* No articles are published yet; no posts are fabricated. Planned topics
-   below come from the preserved MC material. */
-const topics = ['Grey hair', 'Hair recovery', 'Self-care', 'Care homes'];
+const mode = modeOf(Astro);
+const page = getContent<any>('page:blog', mode);
+const posts = blogPostsPub(mode);
+if (!page) Astro.response.status = 404;
 ---
 
-<Base
-  title="Blog"
-  description="Notes from Maison Coiffure on grey hair, hair recovery, self-care and care for care-home residents. Articles will appear here as they are written."
->
-  <PageHead
-    eyebrow="Blog"
-    title="Notes from the salon"
-    lede="Articles will appear here as they are written: honest, practical pieces at the same unhurried pace as the salon itself."
-    crumbs={[{ label: 'Home', href: '/' }, { label: 'Blog' }]}
-  />
+{page && (
+  <Base title={page.seo.title} description={page.seo.description} editId="page:blog">
+    <PageHead
+      eyebrow={page.eyebrow}
+      title={page.heading}
+      lede={page.lede}
+      crumbs={[{ label: 'Home', href: '/' }, { label: 'Blog' }]}
+    />
 
-  <div class="wrap section">
-    <div class="note-box" style="max-width: 62ch;">
-      <h4>On the writing table</h4>
-      <p>
-        {topics.join(' · ')}
-      </p>
-      <p style="margin-top: 10px;">
-        In the meantime, the <a href="/treatments">treatments catalogue</a> and the
-        <a href="/about/philosophy">MC Philosophy</a> answer most questions, and
-        <a href="/contact">a message</a> answers the rest.
-      </p>
+    <div class="wrap section">
+      {posts.length ? (
+        <div class="card-grid">
+          {posts.map((p: any) => (
+            <a class="tile-link" href={`/blog/${p.slug}`}>
+              {p.media && <span class="photo-frame"><MediaImg mediaId={p.media} sizes="(max-width: 599px) 100vw, 33vw" /></span>}
+              <h3>{p.title}</h3>
+              <p>{p.summary}</p>
+              <p style="font-size: 0.8125rem; color: var(--muted);">{p.category}{p.publishedDate ? ` · ${p.publishedDate}` : ''}</p>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="note-box" style="max-width: 62ch;">
+          <h4>On the writing table</h4>
+          <p>{(page.topics ?? []).join(' · ')}</p>
+          <p style="margin-top: 10px;">
+            In the meantime, the <a href="/treatments">treatments catalogue</a> and the
+            <a href="/about/philosophy">MC Philosophy</a> answer most questions, and
+            <a href="/contact">a message</a> answers the rest.
+          </p>
+        </div>
+      )}
     </div>
-  </div>
-</Base>
+  </Base>
+)}

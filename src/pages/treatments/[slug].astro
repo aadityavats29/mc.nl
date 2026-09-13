@@ -1,0 +1,90 @@
+---
+/**
+ * Treatment detail pages, rendered from the shared treatment and
+ * service-group records: title and introduction, relevant MC image, current
+ * options with fixed/from/quote/consultation semantics, practical notes and
+ * a clear next step. Salon Party adds its two venue choices and the quote
+ * enquiry (both venues are enquiry preferences, never instant bookings).
+ */
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import MediaImg from '../../components/MediaImg.astro';
+import PriceBlock from '../../components/PriceBlock.astro';
+import EnquiryForm from '../../components/EnquiryForm.astro';
+import { renderRichText } from '../../lib/richtext';
+import { modeOf, sitePub, treatmentsPub, serviceGroupsById, bookingRules, waLinkFor } from '../../lib/pub';
+
+const mode = modeOf(Astro);
+const { slug } = Astro.params;
+const t = treatmentsPub(mode).find((x: any) => x.slug === slug);
+if (!t) {
+  Astro.response.status = 404;
+}
+const site = sitePub(mode);
+const rules = bookingRules(mode);
+const groups = t ? serviceGroupsById(t.groups ?? [], mode) : [];
+const cta = t ? waLinkFor(site, t.waMessage ?? `Hello Maison Coiffure, I would like to book: ${t.title}.`) : '';
+---
+
+{!t ? (
+  <Base title="Page not found" description="This page does not exist.">
+    <div class="wrap section-lg" style="text-align:center; padding-block: 120px;">
+      <h1 style="font-size: var(--size-title);">This page does not exist</h1>
+      <p><a class="btn btn-primary" href="/treatments">Back to treatments</a></p>
+    </div>
+  </Base>
+) : (
+  <Base title={t.metaTitle ?? t.title} description={t.seoDescription} editId={`treatment:${t.slug}`}>
+    <PageHead
+      eyebrow="Treatments"
+      title={t.title}
+      lede={t.lede}
+      crumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'Treatments', href: '/treatments' },
+        { label: t.title },
+      ]}
+    />
+
+    <div class="wrap section">
+      <div class="split" style="align-items: start;">
+        <article class="prose">
+          <div set:html={renderRichText(t.body)} />
+          {t.venues && (
+            <Fragment>
+              <h2>{t.venues.heading}</h2>
+              <div set:html={renderRichText(t.venues.home)} />
+              <div set:html={renderRichText(t.venues.salon)} />
+              <p>{t.venues.note}</p>
+            </Fragment>
+          )}
+        </article>
+        <div>
+          {t.media && (
+            <div class="photo-frame" style="aspect-ratio: 4 / 5;">
+              <MediaImg mediaId={t.media} sizes="(max-width: 767px) 100vw, 45vw" />
+            </div>
+          )}
+          <div class="note-box" style="margin-top: 20px;">
+            <h4>Ready when you are</h4>
+            <p>{site.availability}. Booking works simply via WhatsApp; we confirm the details together.</p>
+            <p style="margin-top: 12px;">
+              <a class="btn btn-primary" href={t.enquiry ? '#enquire' : cta} rel="noopener">{t.ctaLabel}</a>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {groups.map((g: any) => (
+        <PriceBlock group={g} headingLevel="h2" conditionText={rules?.globalPriceCondition} />
+      ))}
+
+      {t.enquiry && (
+        <Fragment>
+          <hr style="margin-block: 48px;" />
+          <EnquiryForm site={site} requestType={t.enquiry} heading={`Request a ${t.title.toLowerCase()} quote`} />
+        </Fragment>
+      )}
+    </div>
+  </Base>
+)}

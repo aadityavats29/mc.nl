@@ -1,0 +1,27 @@
+---
+/** Accessible reorder / visibility / duplicate / remove controls for one
+ *  list item. Buttons submit the surrounding editor form, so typed edits are
+ *  kept when the structure changes. */
+interface Props {
+  listPath: string;
+  index: number;
+  canHide?: boolean;
+  canRemove?: boolean;
+  hidden?: boolean;
+}
+const { listPath, index, canHide = true, canRemove = true, hidden = false } = Astro.props;
+---
+
+<span class="section-tools">
+  <button class="btn small" type="submit" name="listop" value={`up|${listPath}|${index}`} aria-label="Move up">↑ Up</button>
+  <button class="btn small" type="submit" name="listop" value={`down|${listPath}|${index}`} aria-label="Move down">↓ Down</button>
+  {canHide && (
+    <button class="btn small" type="submit" name="listop" value={`toggle|${listPath}|${index}`}>
+      {hidden ? 'Show' : 'Hide'}
+    </button>
+  )}
+  <button class="btn small" type="submit" name="listop" value={`duplicate|${listPath}|${index}`}>Duplicate</button>
+  {canRemove && (
+    <button class="btn small danger" type="submit" name="listop" value={`remove|${listPath}|${index}`}>Remove</button>
+  )}
+</span>

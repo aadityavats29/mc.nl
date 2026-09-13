@@ -1,7 +1,7 @@
 /*
- * Maison Coiffure motion and interaction controller.
- * Implements the MC motion specification: section reveals, quote word reveal,
- * treatment hover previews, navigation dropdowns and the compact drawer.
+ * Maison Coiffure motion and interaction controller (Navy-led update).
+ * Section reveals, intro reveal, hero header state, About-card and brand
+ * marquees, treatment hover previews, compact drawer and WhatsApp forms.
  * Content is fully readable without this file; hidden initial states are only
  * applied once this controller marks the document ready (html.mjs).
  */
@@ -9,10 +9,32 @@
   'use strict';
 
   var doc = document.documentElement;
-  var MOTION = doc.classList.contains('js-motion'); // set pre-paint; absent when reduced motion
-  var SMALL = window.matchMedia('(max-width: 767px)');
+  var MOTION = doc.classList.contains('js-motion'); // absent when reduced motion
 
   if (MOTION) doc.classList.add('mjs');
+
+  /* ---------------------------------------------------------------- */
+  /* Header over the homepage hero: solid MC surface after the hero    */
+  /* ---------------------------------------------------------------- */
+
+  (function () {
+    var header = document.querySelector('.site-header.over-hero');
+    if (!header) return;
+    var hero = document.querySelector('.hero-landing');
+    if (!hero || !('IntersectionObserver' in window)) {
+      header.classList.add('solid');
+      return;
+    }
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (e) {
+          header.classList.toggle('solid', e.boundingClientRect.bottom - 70 <= 0 || !e.isIntersecting);
+        });
+      },
+      { threshold: [0, 0.02, 0.05, 0.1], rootMargin: '-70px 0px 0px 0px' }
+    );
+    io.observe(hero);
+  })();
 
   /* ---------------------------------------------------------------- */
   /* Ordinary section reveals                                          */
@@ -20,7 +42,6 @@
 
   if (MOTION && 'IntersectionObserver' in window) {
     var reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
-    // Restored positions / deep links: settle anything already above the viewport.
     reveals.forEach(function (el) {
       var r = el.getBoundingClientRect();
       if (r.bottom < 0) el.classList.add('settle', 'is-in');
@@ -30,7 +51,6 @@
         entries.forEach(function (entry) {
           if (!entry.isIntersecting) return;
           var el = entry.target;
-          // Stagger up to 3 siblings by 70ms.
           var group = el.getAttribute('data-reveal-group');
           if (group) {
             var idx = Number(el.getAttribute('data-reveal-index') || 0);
@@ -40,124 +60,179 @@
           io.unobserve(el);
         });
       },
-      { threshold: 0.15, rootMargin: '0px 0px 0px 0px' }
+      { threshold: 0.15 }
     );
     reveals.forEach(function (el) {
       if (el.classList.contains('is-in')) return;
-      // Sections taller than the viewport: reveal from the first visible edge.
       if (el.offsetHeight > window.innerHeight * 0.85) {
         el.classList.add('is-in');
         return;
       }
       io.observe(el);
     });
+
+    /* Introduction reveal: trigger when the section enters the lower 80%. */
+    var intro = Array.prototype.slice.call(document.querySelectorAll('.reveal-intro'));
+    if (intro.length) {
+      var settled = intro[0].getBoundingClientRect().bottom < 0;
+      if (settled) {
+        intro.forEach(function (el) { el.classList.add('settle', 'is-in'); });
+      } else {
+        var iio = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (!entry.isIntersecting) return;
+              entry.target.classList.add('is-in');
+              iio.unobserve(entry.target);
+            });
+          },
+          { rootMargin: '0px 0px -20% 0px', threshold: 0 }
+        );
+        intro.forEach(function (el) { iio.observe(el); });
+      }
+    }
   }
 
   /* ---------------------------------------------------------------- */
-  /* MC quote word reveal                                              */
+  /* Marquee tracks (About cards 28px/s, brand strip 35px/s)           */
   /* ---------------------------------------------------------------- */
 
-  (function () {
-    var quote = document.querySelector('.mc-quote');
-    if (!quote) return;
-    if (!MOTION || !('IntersectionObserver' in window)) return;
+  Array.prototype.slice.call(document.querySelectorAll('[data-marquee]')).forEach(function (mq) {
+    var viewport = mq.querySelector('.mq-viewport');
+    var track = mq.querySelector('.mq-track');
+    var set = mq.querySelector('.mq-set');
+    if (!viewport || !track || !set) return;
 
-    var words = Array.prototype.slice.call(quote.querySelectorAll('.quote-word'));
-    var rect = quote.getBoundingClientRect();
-    // Deep link or restored position past the section: final state immediately.
-    if (rect.bottom < 0) return;
+    var section = mq.closest('section') || mq;
+    var toggle = section.querySelector('.mq-toggle');
+    var prev = section.querySelector('.mq-prev');
+    var next = section.querySelector('.mq-next');
+    var dots = mq.querySelector('.mq-dots');
+    var items = Array.prototype.slice.call(set.children);
+    var touch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    var loopOnTouch = mq.hasAttribute('data-loop-touch');
 
-    if (!SMALL.matches) {
-      // Cap the whole sequence at 1200ms: reduce stagger for longer copy.
-      var stagger = words.length > 1 ? Math.min(24, (1200 - 650) / (words.length - 1)) : 0;
-      words.forEach(function (w, i) {
-        w.style.setProperty('--word-delay', Math.round(i * stagger) + 'ms');
-      });
-    }
-    quote.setAttribute('data-armed', '');
-
-    var played = false;
-    var io = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (played || !entry.isIntersecting) return;
-          played = true;
-          // Fast scroll past: settle immediately instead of animating.
-          if (entry.boundingClientRect.bottom < 0) quote.classList.add('settle');
-          quote.classList.add('is-in');
-          io.disconnect();
-        });
-      },
-      // Trigger when the section enters the lower 78% of the viewport.
-      { rootMargin: '0px 0px -22% 0px', threshold: 0 }
-    );
-    io.observe(quote);
-  })();
-
-  /* ---------------------------------------------------------------- */
-  /* Desktop dropdown navigation                                       */
-  /* ---------------------------------------------------------------- */
-
-  (function () {
-    var groups = Array.prototype.slice.call(document.querySelectorAll('.primary-nav .nav-group'));
-    if (!groups.length) return;
-    var hoverFine = window.matchMedia('(hover: hover) and (pointer: fine)');
-
-    function closeAll(except) {
-      groups.forEach(function (g) {
-        if (g === except) return;
-        g.classList.remove('open');
-        var b = g.querySelector('button[aria-expanded]');
-        if (b) b.setAttribute('aria-expanded', 'false');
-      });
+    /* Reduced motion, automatic movement switched off in Studio, or too few
+       items for a useful loop: static layout with no auto movement. */
+    if (!MOTION || mq.getAttribute('data-auto') === '0' || items.length < 2) {
+      mq.classList.add('mq-static');
+      return;
     }
 
-    groups.forEach(function (g) {
-      var btn = g.querySelector('button[aria-expanded]');
-      if (!btn) return;
-      var openT = null;
-      var closeT = null;
-
-      function setOpen(open) {
-        g.classList.toggle('open', open);
-        btn.setAttribute('aria-expanded', String(open));
-        if (open) closeAll(g);
+    if (touch && !loopOnTouch) {
+      /* Manual swipeable row with snap points, buttons and indicator. */
+      mq.classList.add('mq-manual');
+      if (prev) prev.hidden = false;
+      if (next) next.hidden = false;
+      function cardStep() {
+        return items[0].getBoundingClientRect().width + 24;
       }
-
-      btn.addEventListener('click', function () {
-        setOpen(!g.classList.contains('open'));
+      if (prev) prev.addEventListener('click', function () {
+        viewport.scrollBy({ left: -cardStep(), behavior: 'smooth' });
       });
-
-      // Pointer hover: open after 120ms, close with 180ms exit tolerance.
-      g.addEventListener('pointerenter', function () {
-        if (!hoverFine.matches) return;
-        clearTimeout(closeT);
-        openT = setTimeout(function () { setOpen(true); }, 120);
+      if (next) next.addEventListener('click', function () {
+        viewport.scrollBy({ left: cardStep(), behavior: 'smooth' });
       });
-      g.addEventListener('pointerleave', function () {
-        if (!hoverFine.matches) return;
-        clearTimeout(openT);
-        closeT = setTimeout(function () { setOpen(false); }, 180);
-      });
-
-      g.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && g.classList.contains('open')) {
-          e.stopPropagation();
-          setOpen(false);
-          btn.focus();
-        }
-      });
-      g.addEventListener('focusout', function () {
-        requestAnimationFrame(function () {
-          if (!g.contains(document.activeElement)) setOpen(false);
+      if (dots) {
+        dots.hidden = false;
+        items.forEach(function (_, i) {
+          var d = document.createElement('button');
+          d.type = 'button';
+          d.className = 'mq-dot' + (i === 0 ? ' on' : '');
+          d.setAttribute('aria-label', 'Go to card ' + (i + 1));
+          d.addEventListener('click', function () {
+            viewport.scrollTo({ left: i * cardStep(), behavior: 'smooth' });
+          });
+          dots.appendChild(d);
         });
+        viewport.addEventListener('scroll', function () {
+          var i = Math.round(viewport.scrollLeft / cardStep());
+          Array.prototype.forEach.call(dots.children, function (d, j) {
+            d.classList.toggle('on', j === Math.min(i, items.length - 1));
+          });
+        }, { passive: true });
+      }
+      return;
+    }
+
+    /* Continuous auto mode. Clone the set visually for a seamless loop:
+       clones are decorative, hidden from AT and removed from tab order. */
+    mq.classList.add('mq-auto');
+    if (toggle) toggle.hidden = false;
+
+    var speed = Number(mq.getAttribute('data-speed')) || 30;
+    var setWidth = 0;
+    var x = 0;
+    var raf = null;
+    var last = null;
+    var hoverPause = false;
+    var focusPause = false;
+    var userPause = false;
+    var offscreen = false;
+
+    function buildClones() {
+      Array.prototype.slice.call(track.querySelectorAll('.mq-clone')).forEach(function (c) { c.remove(); });
+      setWidth = set.getBoundingClientRect().width;
+      if (!setWidth) return;
+      var needed = Math.max(2, Math.ceil((viewport.clientWidth + setWidth) / setWidth));
+      for (var i = 1; i < needed; i++) {
+        var clone = set.cloneNode(true);
+        clone.classList.add('mq-clone');
+        clone.setAttribute('aria-hidden', 'true');
+        Array.prototype.forEach.call(clone.querySelectorAll('a, button'), function (el) {
+          el.setAttribute('tabindex', '-1');
+        });
+        track.appendChild(clone);
+      }
+    }
+
+    function paused() {
+      return hoverPause || focusPause || userPause || offscreen || document.hidden;
+    }
+
+    function tick(t) {
+      raf = null;
+      if (last == null) last = t;
+      var dt = Math.min(64, t - last);
+      last = t;
+      if (!paused()) {
+        x -= (speed * dt) / 1000;
+        if (setWidth > 0 && -x >= setWidth) x += setWidth;
+        track.style.transform = 'translate3d(' + x.toFixed(2) + 'px, 0, 0)';
+      }
+      raf = requestAnimationFrame(tick);
+    }
+
+    buildClones();
+    raf = requestAnimationFrame(tick);
+
+    mq.addEventListener('pointerenter', function () { hoverPause = true; });
+    mq.addEventListener('pointerleave', function () { hoverPause = false; last = null; });
+    mq.addEventListener('focusin', function () { focusPause = true; });
+    mq.addEventListener('focusout', function () {
+      requestAnimationFrame(function () {
+        if (!mq.contains(document.activeElement)) { focusPause = false; last = null; }
       });
     });
-
-    document.addEventListener('click', function (e) {
-      if (!e.target.closest || !e.target.closest('.nav-group')) closeAll(null);
+    if (toggle) {
+      toggle.addEventListener('click', function () {
+        userPause = !userPause;
+        toggle.setAttribute('aria-pressed', String(userPause));
+        last = null;
+      });
+    }
+    document.addEventListener('visibilitychange', function () { last = null; });
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { offscreen = !e.isIntersecting; last = null; });
+      }, { threshold: 0 }).observe(mq);
+    }
+    var resizeT = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(function () { x = 0; buildClones(); }, 200);
     });
-  })();
+  });
 
   /* ---------------------------------------------------------------- */
   /* Compact menu drawer                                               */
@@ -183,7 +258,6 @@
     var closeBtn = drawer.querySelector('.drawer-close');
     if (closeBtn) closeBtn.addEventListener('click', function () { drawer.close(); });
 
-    // Expandable categories: measured-height accordion, 220ms.
     Array.prototype.slice.call(drawer.querySelectorAll('.drawer-group-btn')).forEach(function (btn) {
       var sub = document.getElementById(btn.getAttribute('aria-controls'));
       if (!sub) return;
@@ -211,7 +285,7 @@
   })();
 
   /* ---------------------------------------------------------------- */
-  /* Treatment explorer previews                                       */
+  /* Treatment explorer previews (retained interaction)                */
   /* ---------------------------------------------------------------- */
 
   (function () {
@@ -245,8 +319,8 @@
       var vh = window.innerHeight;
       var x = lastX + 20;
       var y = lastY + 20;
-      if (x + pw > vw - 16) x = lastX - pw - 20; // flip horizontally
-      if (y + ph > vh - 16) y = lastY - ph - 20; // flip vertically
+      if (x + pw > vw - 16) x = lastX - pw - 20;
+      if (y + ph > vh - 16) y = lastY - ph - 20;
       x = Math.max(16, Math.min(x, vw - pw - 16));
       y = Math.max(16, Math.min(y, vh - ph - 16));
       panel.style.left = x + 'px';
@@ -284,7 +358,7 @@
           clearTimeout(hideT);
           clearTimeout(showT);
           if (active && active !== link) {
-            show(link); // replace content without stacking panels
+            show(link);
           } else {
             showT = setTimeout(function () { show(link); }, 120);
           }
@@ -305,18 +379,17 @@
               panel.classList.add('hiding');
               panel.classList.remove('show');
             }
-          }, 100); // exit grace
+          }, 100);
         });
         link.addEventListener('click', hideNow);
 
-        // Keyboard focus: stable panel anchored beside the focused row.
         link.addEventListener('focus', function () {
           if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
           var li = link.closest('li');
           if (!li || li.querySelector('.focus-preview')) return;
           var fp = document.createElement('div');
           fp.className = 'focus-preview';
-          fp.setAttribute('aria-hidden', 'true'); // same text is linked via aria-describedby
+          fp.setAttribute('aria-hidden', 'true');
           fp.textContent = link.getAttribute('data-preview') || '';
           li.style.position = 'relative';
           fp.style.top = '100%';
@@ -332,7 +405,6 @@
       });
     });
 
-    // Clear immediately on scroll, route change, Escape or loss of window focus.
     window.addEventListener('scroll', hideNow, { passive: true });
     window.addEventListener('blur', hideNow);
     document.addEventListener('keydown', function (e) {

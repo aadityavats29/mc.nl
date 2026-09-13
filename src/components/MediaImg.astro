@@ -1,0 +1,34 @@
+---
+/**
+ * Renders a managed media item (from the shared media registry) with
+ * responsive sources, stored alt text and the stored focal point.
+ */
+import { getMedia, mediaSrcset, mediaUrl } from '../lib/content';
+
+interface Props {
+  mediaId: string | null | undefined;
+  sizes?: string;
+  loading?: 'eager' | 'lazy';
+  fetchpriority?: 'high' | 'auto';
+  class?: string;
+  useFocal?: boolean;
+}
+const { mediaId, sizes = '(max-width: 767px) 100vw, 50vw', loading = 'lazy', fetchpriority = 'auto', class: className, useFocal = false } = Astro.props;
+const m = mediaId ? getMedia(mediaId) : null;
+---
+
+{m && (
+  <img
+    src={mediaUrl(m, 1200)}
+    srcset={mediaSrcset(m)}
+    sizes={sizes}
+    alt={m.alt}
+    width={m.w}
+    height={m.h}
+    loading={loading}
+    decoding={loading === 'eager' ? 'sync' : 'async'}
+    fetchpriority={fetchpriority}
+    class={className}
+    style={useFocal ? `object-position: ${m.focal_x}% ${m.focal_y}%;` : undefined}
+  />
+)}

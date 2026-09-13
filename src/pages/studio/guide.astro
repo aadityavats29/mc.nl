@@ -1,0 +1,63 @@
+---
+import Studio from '../../layouts/Studio.astro';
+---
+
+<Studio title="Owner guide">
+  <div class="studio-head">
+    <div>
+      <h1>Owner guide</h1>
+      <p class="lede">The short version of everything you can do here. Nothing you do in Studio touches the website until you publish.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>The normal workflow</h2>
+    <p><b>Choose a page → Edit → Save draft → Preview → Publish.</b></p>
+    <ul>
+      <li><b>Save draft</b> keeps your work privately; the website does not change. Drafts also save automatically while you type, and they survive signing out.</li>
+      <li><b>Preview draft</b> shows the real website with your unpublished changes; only signed-in editors can see it.</li>
+      <li><b>Publish…</b> first shows what will change and warns about anything to check; nothing goes live until you confirm.</li>
+      <li>Made a mistake? <b>Discard unpublished changes</b> returns the draft to what is live, and <b>History</b> can restore any earlier version into the draft.</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h2>Replace a photo</h2>
+    <ol>
+      <li>Open <b>Photos &amp; videos</b> and upload the new photo (describe what it shows).</li>
+      <li>Open the page under <b>Pages</b> or <b>Treatments</b>, pick the new photo in the photo field, and Save draft.</li>
+      <li>Preview, then Publish. The old photo stays in the library.</li>
+    </ol>
+    <p class="help">The focal point controls what stays in view when a photo is cropped on phones; adjust it on the photo's own page.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Change a price</h2>
+    <ol>
+      <li>Open <b>Services &amp; prices</b> and the group the service belongs to.</li>
+      <li>Change the amount (or set "Personal quotation" if there is no fixed amount; an unknown price never becomes €0).</li>
+      <li>Publish. The treatment page, the catalogue, the homepage previews, the booking selector and the assistant content all update together, because they all read this one record.</li>
+    </ol>
+  </div>
+
+  <div class="panel">
+    <h2>Undo a mistake</h2>
+    <ul>
+      <li>Not published yet? <b>Discard unpublished changes</b> on the page.</li>
+      <li>Already published? Open <b>History</b>, restore the version you want into the draft, preview it, and publish again.</li>
+      <li>A page taken off the website stays in Studio as a draft and can be published again later.</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h2>Good to know</h2>
+    <ul>
+      <li>If two people edit the same page, the second Save is stopped instead of overwriting the first; both versions stay visible so nothing is lost.</li>
+      <li>Photos marked "client permission still to confirm" trigger a warning on every publish until you change their status.</li>
+      <li>Brands appear on the website only when marked <i>confirmed</i> and <i>visible</i>; unconfirmed brands and internal notes never reach visitors or the assistant.</li>
+      <li>Renaming a page's address automatically redirects the old address.</li>
+      <li><b>Backups:</b> download the content backup under Settings, and copy the website's <code class="token">data/</code> folder regularly (daily once hosted, kept at least 30 days). Restoring is: put the folder back, restart the site.</li>
+      <li><b>Password recovery:</b> another owner can create you a fresh account under Settings. If no owner can sign in at all, whoever manages the hosting can move the file <code class="token">data/mc.db</code> aside so Studio offers the first-run setup again, then restore content from a backup.</li>
+    </ul>
+  </div>
+</Studio>

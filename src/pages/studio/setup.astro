@@ -1,0 +1,56 @@
+---
+import Studio from '../../layouts/Studio.astro';
+import { userCount, createUser, startSession } from '../../lib/auth';
+
+if (userCount() > 0) return Astro.redirect('/studio/login');
+
+let error = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const name = String(form.get('name') ?? '').trim();
+  const email = String(form.get('email') ?? '').trim();
+  const password = String(form.get('password') ?? '');
+  const confirm = String(form.get('confirm') ?? '');
+  if (!name || !email || !email.includes('@')) error = 'Please fill in your name and a valid email address.';
+  else if (password.length < 10) error = 'Choose a password of at least 10 characters.';
+  else if (password !== confirm) error = 'The two passwords do not match.';
+  else {
+    const user = createUser(email, name, 'owner', password, true);
+    startSession(Astro.cookies, user.id);
+    return Astro.redirect('/studio');
+  }
+}
+---
+
+<Studio title="Welcome">
+  <div class="studio-head">
+    <div>
+      <h1>Welcome to Maison Coiffure Studio</h1>
+      <p class="lede">Create the owner account. This account can edit, publish and manage access.</p>
+    </div>
+  </div>
+  {error && <p class="notice bad">{error}</p>}
+  <div class="panel" style="max-width: 480px;">
+    <form method="post">
+      <div class="field">
+        <label for="su-name">Your name</label>
+        <input id="su-name" name="name" type="text" required autocomplete="name" />
+      </div>
+      <div class="field">
+        <label for="su-email">Email address</label>
+        <input id="su-email" name="email" type="email" required autocomplete="email" />
+        <p class="help">Used to sign in. No emails are sent by Studio.</p>
+      </div>
+      <div class="field">
+        <label for="su-pass">Password</label>
+        <input id="su-pass" name="password" type="password" required minlength="10" autocomplete="new-password" />
+        <p class="help">At least 10 characters. Store it somewhere safe; there is no email reset yet.</p>
+      </div>
+      <div class="field">
+        <label for="su-confirm">Repeat the password</label>
+        <input id="su-confirm" name="confirm" type="password" required autocomplete="new-password" />
+      </div>
+      <button class="btn primary" type="submit">Create owner account</button>
+    </form>
+  </div>
+</Studio>

@@ -1,50 +1,69 @@
-# Maison Coiffure — custom website build
+# Maison Coiffure — website + Studio
 
-A custom, static-first build of the new Maison Coiffure website (Astro 5, TypeScript, no CMS
-yet, no WordPress, no theme code). Content, prices and booking semantics come from the preserved
-MC master brief and the September 2026 booking specification; design and motion follow the
-10 September design & interaction brief.
+The custom Maison Coiffure website (Navy-led homepage direction, 14 Sep 2026) together with
+**Maison Coiffure Studio**: the owner's private control centre for every page, price, photo and
+menu label, with drafts, previews, publishing, history and the AI-ready published-content export.
 
-**Read `_handoff/HANDOFF.md` first** — it records the provisional identity decisions (palette,
-monogram, type), the photography permissions still needed, and every open content item awaiting
-the owner.
+**Read `_handoff/HANDOFF.md` first** — provisional identity decisions, photography permissions
+still needed, and every open content item awaiting the owner.
 
 ## Running it
 
 ```bash
-npm install
-npm run dev       # local dev server
-npm run build     # static production build in dist/
-npm run preview   # serve the production build
+npm install        # first time on a new machine: delete node_modules first if it was
+                   # installed on a different operating system
+npm run dev        # development server on http://localhost:4321
+npm run build      # production build
+npm start          # run the production server (uses PORT / HOST if set)
 ```
 
 Node 20+ recommended.
 
-## Where things live
+## Accessing Studio
 
-| Path | Contents |
+1. Start the site (`npm run dev` or `npm run build && npm start`).
+2. Open **http://localhost:4321/studio**.
+3. The first visit offers **first-run setup**: create the owner account (name, email, password).
+   There are no default or shared credentials anywhere.
+4. After signing in: Overview → Pages / Treatments / Services & prices / Photos & videos / Blog /
+   Brands / Menus & footer / Business details / Assistant content / Settings. The built-in
+   **Owner guide** covers the everyday tasks (replace a photo, change a price, undo a mistake).
+
+The workflow is always **Choose page → Edit → Save draft → Preview → Publish**. Nothing changes on
+the public site until Publish is confirmed; publish validates required fields and price semantics
+first and warns about photos whose client permission is unconfirmed.
+
+## How it fits together
+
+| Piece | Where |
 | --- | --- |
-| `src/data/services.ts` | The complete service catalogue as structured data (single source for every price shown anywhere, the treatments index, and the Book page) |
-| `src/data/site.ts` | Contact details, availability, navigation, hair-length definitions, global price condition |
-| `src/data/explorer.ts` | The eight treatment-explorer rows (summaries + hover previews) |
-| `src/data/images.ts` | Image manifest: every photo's archive source, dimensions and alt text |
-| `src/pages/` | All 18 pages (file-based routing) |
-| `src/components/` | Header, drawer, footer, price tables, explorer, enquiry form, monogram |
-| `src/styles/global.css` | Design tokens (provisional MC palette), layout, motion CSS |
-| `public/scripts/motion.js` | The motion/interaction controller (reveals, quote, previews, drawer, dropdowns, WhatsApp forms) |
-| `public/images/` | Web derivatives generated from original archive photography (originals untouched) |
-| `public/mc-monogram.svg` | The M/C mark, extracted as vector from the original concept-3 artwork |
-| `verify.mjs` | Automated acceptance checks (43 checks; needs Playwright + Chromium) |
-| `shots.mjs` | Screenshot harness used during review |
-| `_handoff/` | Handoff notes, image contact sheets and review candidates |
+| Content database (records + revisions + media registry + events) | `data/mc.db` (SQLite, created and seeded on first run from `src/lib/seed.ts`) |
+| Uploaded media (originals + web derivatives) | `data/media/` |
+| Studio | `src/pages/studio/`, engine in `src/lib/studio.ts`, auth in `src/lib/auth.ts` |
+| Public pages (server-rendered from published content) | `src/pages/`, read helpers in `src/lib/pub.ts` |
+| Assistant export (published content only, bearer token) | `GET /api/assistant/content/v1`, token in Studio → Settings |
+| Dynamic sitemap from publication state | `/sitemap.xml` |
+| Motion/interaction controller | `public/scripts/motion.js` |
+| Archive-derived web images | `public/images/` (originals in the preserved archive stay untouched) |
+| Acceptance tests | `verify.mjs` (public site, 39 checks), `studio-verify.mjs` (Studio + AI-readiness, 44 checks) — run each with `node <file>` after a build |
+
+**Backups:** the whole content state is the `data/` folder (plus a JSON export under Studio →
+Settings). Copy it daily once hosted, keep ≥30 days; restore = put the folder back and restart.
+
+**Deployment note:** the site is a plain Node server (`npm start`) — any Node host or a small VPS
+works. SQLite is the vendor-neutral default store; moving to Postgres or a hosted CMS later is a
+data-layer swap, the content model already matches. No hosting vendor has been selected or approved.
 
 ## Deliberate behaviour
 
-- Everything renders without JavaScript; animation is progressive enhancement, and
-  `prefers-reduced-motion` shows final states instantly.
-- The hero logo entrance plays once per session and never on back/anchor navigation.
-- Booking and enquiries compose WhatsApp messages to the salon's real number; nothing pretends
-  to be a live reservation system, and colour/highlight/Gracefully Grey treatments can only be
-  *requested* via their consultations.
-- No Favorites/bestsellers section anywhere (explicit owner direction).
-# mc.nl
+- Everything renders without JavaScript; motion is progressive enhancement and
+  `prefers-reduced-motion` shows final states instantly. Both homepage marquees pause on
+  hover/focus, have Pause/Play controls, become manual swipe rows on touch and static layouts
+  under reduced motion; loop clones are aria-hidden and out of the tab order.
+- Booking/enquiries compose WhatsApp messages to the salon's real number; requests are explicitly
+  not confirmed bookings; colour/highlight/Gracefully Grey are requestable only via their
+  consultations.
+- Prices live once in shared records: a Studio price edit updates the treatment page, catalogue,
+  homepage previews, booking selector and assistant export together on publish.
+- Only explicitly published content reaches visitors, crawlers, the sitemap and the assistant
+  export; drafts, internal notes and unconfirmed brands never leave Studio.

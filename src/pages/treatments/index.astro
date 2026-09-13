@@ -1,157 +1,80 @@
 ---
+/**
+ * Treatments index: a useful destination in its own right, rendered from the
+ * shared catalogue records. Category anchors, readable descriptions, current
+ * prices with correct semantics, hair-care/recovery at #hair-care, and the
+ * global price condition where it applies.
+ */
 import Base from '../../layouts/Base.astro';
 import PageHead from '../../components/PageHead.astro';
-import PriceBlock from '../../components/PriceBlock.astro';
 import TreatmentExplorer from '../../components/TreatmentExplorer.astro';
-import {
-  haircuts,
-  curlyHaircuts,
-  signatureBlowDry,
-  colourConsultation,
-  permanentColour,
-  semiPermanentColour,
-  toner,
-  foilHighlights,
-  capHighlights,
-  hairCare,
-  recoveryProgramme,
-  gracefullyGrey,
-  headMassage,
-  superloop,
-  coaching,
-} from '../../data/services';
-import { hairLengths, site, waLink } from '../../data/site';
+import PriceBlock from '../../components/PriceBlock.astro';
+import { modeOf, sitePub, treatmentsPub, serviceGroups, bookingRules, waLinkFor } from '../../lib/pub';
+import { getContent } from '../../lib/content';
 
-const jumps = [
-  { label: 'Haircuts', href: '#haircuts' },
-  { label: 'Styling', href: '#styling' },
-  { label: 'Colour', href: '#colour' },
-  { label: 'Highlights', href: '#highlights' },
-  { label: 'Hair Care & Recovery', href: '#hair-care' },
-  { label: 'Superloop', href: '#superloop-section' },
-  { label: 'Gracefully Grey', href: '#gracefully-grey-section' },
-  { label: 'Head Massage', href: '#massage' },
-  { label: 'Coaching', href: '#coaching-section' },
-  { label: 'Salon Party', href: '#on-location' },
+const mode = modeOf(Astro);
+const page = getContent<any>('page:treatments', mode);
+const site = sitePub(mode);
+const rows = treatmentsPub(mode);
+const groups = serviceGroups(mode);
+const rules = bookingRules(mode);
+
+const sections: { id: string; label: string; heading: string; lede?: string; groups: any[] }[] = [
+  { id: 'haircuts', label: 'Haircuts', heading: 'Haircuts', lede: 'Great hair is about the right shape, movement and attention to detail. Whether you love long layers, natural curls or a fresh new cut, every hairstyle is created to suit you, your hair and your personality.', groups: groups.filter((g: any) => g.category === 'Haircuts') },
+  { id: 'styling', label: 'Styling', heading: 'Styling', lede: 'A Signature Blow-Dry is a bit more than just a blow-dry: a polished finish with extra attention to shape, movement, shine and lasting style.', groups: groups.filter((g: any) => g.category === 'Styling') },
+  { id: 'colour', label: 'Colour', heading: 'Colour', lede: 'Permanent colour gives lasting change and grey coverage. Semi-permanent colour adds tone and depth, and a toner makes the softest adjustment; neither makes hair lighter. Every first colour booking starts with a consultation.', groups: groups.filter((g: any) => g.category === 'Colour') },
+  { id: 'highlights', label: 'Highlights', heading: 'Highlights', lede: 'Carefully placed lighter sections and dimension, with a finishing toner included in every price and every reserved appointment.', groups: groups.filter((g: any) => g.category === 'Highlights') },
+  { id: 'hair-care', label: 'Hair Care & Recovery', heading: 'Hair Care and Recovery', lede: 'A personalised recovery programme supports dry, brittle, stressed or damaged hair with a plan suited to its condition, adjusted over successive appointments as the hair responds. Existing split ends can only be removed by trimming.', groups: groups.filter((g: any) => g.category === 'Hair Care') },
+  { id: 'superloop-section', label: 'Superloop', heading: 'Superloop', lede: 'More volume, or help making a crown fall beautifully again.', groups: groups.filter((g: any) => g.category === 'Superloop') },
+  { id: 'gracefully-grey-section', label: 'Gracefully Grey', heading: 'Gracefully Grey', lede: 'A considered transition that suits your current colour, condition, preferences and pace.', groups: groups.filter((g: any) => g.category === 'Gracefully Grey') },
+  { id: 'massage', label: 'Head Massage', heading: 'Head Massage', groups: groups.filter((g: any) => g.category === 'Massage') },
+  { id: 'coaching-section', label: 'Coaching', heading: 'Optional coaching', lede: 'Ordinary listening and personal attention remain part of every appointment. Coaching is different: an actual session with your question at the centre, and always explicitly booked.', groups: groups.filter((g: any) => g.category === 'Coaching') },
 ];
 ---
 
-<Base
-  title="Treatments and prices"
-  description="The complete Maison Coiffure catalogue: haircuts, curls, colouring, highlights with toner included, hair care and recovery, Gracefully Grey, head massage, optional coaching and on-location services, with transparent prices."
->
+<Base title={page.seo.title} description={page.seo.description} editId="page:treatments">
   <PageHead
-    eyebrow="Treatments"
-    title="The complete catalogue"
-    lede="Every service with a clear explanation, a transparent price and the time it deserves. Colour, toner, highlight and Gracefully Grey treatments are agreed in a personal consultation first."
+    eyebrow={page.eyebrow}
+    title={page.heading}
+    lede={page.lede}
     crumbs={[{ label: 'Home', href: '/' }, { label: 'Treatments' }]}
   >
     <nav class="jump-nav" aria-label="Treatment categories">
-      {jumps.map((j) => <a href={j.href}>{j.label}</a>)}
+      {sections.map((s) => <a href={`#${s.id}`}>{s.label}</a>)}
+      <a href="#on-location">Salon Party</a>
     </nav>
   </PageHead>
 
   <div class="wrap section">
     <section aria-labelledby="explore-heading" class="section" style="padding-top: 0;">
       <h2 id="explore-heading" class="sr-only">Treatment pages</h2>
-      <TreatmentExplorer idPrefix="cat" />
+      <TreatmentExplorer rows={rows} idPrefix="cat" />
     </section>
 
-    <div class="note-box" style="max-width: 62ch;">
-      <h4>Hair length, in plain words</h4>
-      {hairLengths.map((l) => (
-        <p style="margin-bottom: 6px;"><strong>{l.name}:</strong> {l.def}</p>
-      ))}
-    </div>
+    {rules?.hairLengths && (
+      <div class="note-box" style="max-width: 62ch;">
+        <h4>Hair length, in plain words</h4>
+        {rules.hairLengths.map((l: any) => (
+          <p style="margin-bottom: 6px;"><strong>{l.name}:</strong> {l.def}</p>
+        ))}
+      </div>
+    )}
 
-    <section id="haircuts" aria-labelledby="haircuts-h" class="section">
-      <h2 id="haircuts-h">Haircuts</h2>
-      <p class="lede" style="margin-bottom: 8px;">
-        Great hair is about the right shape, movement and attention to detail. Whether you love long
-        layers, natural curls or a fresh new cut, every hairstyle is created to suit you, your hair
-        and your personality. <a href="/treatments/haircuts">More about haircuts</a>.
-      </p>
-      <PriceBlock group={haircuts} />
-      <PriceBlock group={curlyHaircuts} />
-    </section>
-
-    <section id="styling" aria-labelledby="styling-h" class="section">
-      <h2 id="styling-h">Styling</h2>
-      <p class="lede" style="margin-bottom: 8px;">
-        A Signature Blow-Dry is a bit more than just a blow-dry: a polished finish with extra
-        attention to shape, movement, shine and lasting style. Perfect for dinner, drinks, a date or
-        a day when you want your hair to look extra good.
-      </p>
-      <PriceBlock group={signatureBlowDry} />
-    </section>
-
-    <section id="colour" aria-labelledby="colour-h" class="section">
-      <h2 id="colour-h">Colour</h2>
-      <p class="lede" style="margin-bottom: 8px;">
-        Permanent colour gives lasting change and grey coverage. Semi-permanent colour adds tone and
-        depth, and a toner makes the softest adjustment; neither makes hair lighter. Every first
-        colour booking starts with a consultation. <a href="/treatments/colouring">More about colouring</a>.
-      </p>
-      <PriceBlock group={colourConsultation} />
-      <PriceBlock group={permanentColour} />
-      <PriceBlock group={semiPermanentColour} />
-      <PriceBlock group={toner} />
-    </section>
-
-    <section id="highlights" aria-labelledby="highlights-h" class="section">
-      <h2 id="highlights-h">Highlights</h2>
-      <p class="lede" style="margin-bottom: 8px;">
-        Carefully placed lighter sections and dimension, with a finishing toner included in every
-        price and every reserved appointment.
-        <a href="/treatments/highlights-lowlights">More about highlights and lowlights</a>.
-      </p>
-      <PriceBlock group={foilHighlights} />
-      <PriceBlock group={capHighlights} />
-    </section>
-
-    <section id="hair-care" aria-labelledby="hair-care-h" class="section">
-      <h2 id="hair-care-h">Hair Care and Recovery</h2>
-      <p class="lede" style="margin-bottom: 8px;">
-        A personalised recovery programme supports dry, brittle, stressed or damaged hair with a
-        plan suited to its condition, adjusted over successive appointments as the hair responds.
-        Existing split ends can only be removed by trimming.
-      </p>
-      {hairCare.map((g) => <PriceBlock group={g} />)}
-      <PriceBlock group={recoveryProgramme} />
-    </section>
-
-    <section id="superloop-section" aria-labelledby="superloop-h" class="section">
-      <h2 id="superloop-h">Superloop</h2>
-      <p class="lede" style="margin-bottom: 8px;">
-        More volume, or help making a crown fall beautifully again.
-        <a href="/treatments/superloop">More about the Superloop</a>.
-      </p>
-      <PriceBlock group={superloop} />
-    </section>
-
-    <section id="gracefully-grey-section" aria-labelledby="grey-h" class="section">
-      <h2 id="grey-h">Gracefully Grey</h2>
-      <p class="lede" style="margin-bottom: 8px;">
-        A considered transition that suits your current colour, condition, preferences and pace.
-        <a href="/treatments/grey-hair">More about grey hair</a>.
-      </p>
-      <PriceBlock group={gracefullyGrey} />
-    </section>
-
-    <section id="massage" aria-labelledby="massage-h" class="section">
-      <h2 id="massage-h">Head Massage</h2>
-      <PriceBlock group={headMassage} />
-    </section>
-
-    <section id="coaching-section" aria-labelledby="coaching-h" class="section">
-      <h2 id="coaching-h">Optional coaching</h2>
-      <p class="lede" style="margin-bottom: 8px;">
-        Ordinary listening and personal attention remain part of every appointment. Coaching is
-        different: an actual session with your question at the centre, and always explicitly
-        booked.
-      </p>
-      <PriceBlock group={coaching} />
-    </section>
+    {sections.map((s) => {
+      /* Show the shared price condition once per section, under its last
+         applicable group, instead of repeating it after every table. */
+      const flags = s.groups.map((g: any) => Boolean(g.globalCondition ?? g.showGlobalCondition));
+      const lastCond = flags.lastIndexOf(true);
+      return (
+        <section id={s.id} aria-labelledby={`${s.id}-h`} class="section">
+          <h2 id={`${s.id}-h`}>{s.heading}</h2>
+          {s.lede && <p class="lede" style="margin-bottom: 8px;">{s.lede}</p>}
+          {s.groups.map((g: any, i: number) => (
+            <PriceBlock group={g} conditionText={i === lastCond ? rules?.globalPriceCondition : undefined} />
+          ))}
+        </section>
+      );
+    })}
 
     <section id="on-location" aria-labelledby="onloc-h" class="section">
       <h2 id="onloc-h">On location</h2>
@@ -169,7 +92,7 @@ const jumps = [
 
     <div class="note-box" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;">
       <p style="margin: 0; max-width: 48ch;"><strong>Not sure what to book?</strong> Contact Maison Coiffure via WhatsApp for guidance; we are happy to think along.</p>
-      <a class="btn btn-primary" href={waLink('Hello Maison Coiffure, I would like some advice about which treatment to book.')} rel="noopener">WhatsApp {site.phoneDisplay}</a>
+      <a class="btn btn-primary" href={waLinkFor(site, 'Hello Maison Coiffure, I would like some advice about which treatment to book.')} rel="noopener">WhatsApp {site.phoneDisplay}</a>
     </div>
   </div>
 </Base>

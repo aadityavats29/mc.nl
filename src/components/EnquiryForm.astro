@@ -5,14 +5,12 @@
  * salon's real number; nothing here claims a confirmed booking, and no
  * availability is invented.
  */
-import { site } from '../data/site';
-
 interface Props {
-  /** Preselect: 'Salon Party' | 'Organisation' | 'Care Home' */
+  site: any;
   requestType?: string;
   heading?: string;
 }
-const { requestType, heading = 'Request a quote' } = Astro.props;
+const { site, requestType, heading = 'Request a quote' } = Astro.props;
 const types = ['Salon Party', 'Organisation', 'Care Home'];
 const treatments = [
   'Haircuts',
@@ -35,7 +33,6 @@ const facilities = [
   data-wa-form
   data-wa-base={site.whatsappBase}
   data-wa-intro={`Hello Maison Coiffure, I would like to request a quote.`}
-  novalidate={false}
 >
   <h2 id="enquire">{heading}</h2>
   <p class="note-box plain" style="margin-top:0">

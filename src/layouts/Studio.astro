@@ -1,0 +1,67 @@
+---
+import Monogram from '../components/Monogram.astro';
+
+interface Props {
+  title: string;
+  active?: string;
+  wide?: boolean;
+}
+const { title, active } = Astro.props;
+const user = (Astro.locals as any).user;
+const items = [
+  { id: 'overview', label: 'Overview', href: '/studio' },
+  { id: 'pages', label: 'Pages', href: '/studio/list/page' },
+  { id: 'treatments', label: 'Treatments', href: '/studio/list/treatment' },
+  { id: 'catalogue', label: 'Services & prices', href: '/studio/list/service-group' },
+  { id: 'stylists', label: 'Hairstylists', href: '/studio/list/stylist' },
+  { id: 'media', label: 'Photos & videos', href: '/studio/media' },
+  { id: 'blog', label: 'Blog', href: '/studio/list/blogpost' },
+  { id: 'brands', label: 'Brands', href: '/studio/list/brand' },
+  { id: 'menus', label: 'Menus & footer', href: '/studio/edit/settings:nav' },
+  { id: 'business', label: 'Business details', href: '/studio/edit/settings:site' },
+  { id: 'assistant', label: 'Assistant content', href: '/studio/assistant' },
+  { id: 'settings', label: 'Settings', href: '/studio/settings' },
+];
+---
+
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>{title} · Maison Coiffure Studio</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles/studio.css" />
+  </head>
+  <body>
+    <div class="studio-shell">
+      <aside class="studio-side">
+        <div class="studio-brand">
+          <Monogram label="" />
+          <b>Maison Coiffure<small>Studio</small></b>
+        </div>
+        <nav class="studio-nav" aria-label="Studio">
+          {items.map((i) => (
+            <a href={i.href} aria-current={active === i.id ? 'page' : undefined}>{i.label}</a>
+          ))}
+          <div class="sep"></div>
+          <a href="/" target="_blank" rel="noopener">Open the live site ↗</a>
+          <a href="/studio/search">Search content</a>
+          <a href="/studio/guide">Owner guide</a>
+        </nav>
+        {user && (
+          <div class="studio-user">
+            {user.name} ({user.role})
+            <form method="post" action="/studio/logout" style="margin-top: 6px;">
+              <button class="btn small" type="submit">Sign out</button>
+            </form>
+          </div>
+        )}
+      </aside>
+      <main class="studio-main">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

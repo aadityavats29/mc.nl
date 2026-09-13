@@ -1,0 +1,786 @@
+---
+/**
+ * The Studio editor: every owner-facing item on the public website has its
+ * editing home here, in plain language. Save keeps a private draft; Publish
+ * is deliberate, validated, and shows what it affects first. Concurrent
+ * edits never overwrite silently: the newer work is kept and shown.
+ */
+import Studio from '../../../layouts/Studio.astro';
+import Field from '../../../components/studio/Field.astro';
+import MediaPicker from '../../../components/studio/MediaPicker.astro';
+import ListTools from '../../../components/studio/ListTools.astro';
+import {
+  getRecord, saveDraft, publishRecord, unpublishRecord, deleteRecord,
+  listRecords, VersionConflictError,
+} from '../../../lib/content';
+import {
+  applyForm, applyListOp, validateForPublish, usedOn, publicPathOf,
+  addRedirect, statusBadge, TYPE_LABELS, type Problem,
+} from '../../../lib/studio';
+import { canPublish } from '../../../lib/auth';
+import { db } from '../../../lib/db';
+
+const id = String(Astro.params.id ?? '');
+let rec = getRecord(id);
+if (!rec) return Astro.redirect('/studio');
+const user = (Astro.locals as any).user;
+const mayPublish = canPublish(user);
+
+let notice = '';
+let problems: Problem[] = [];
+let confirmPublish = false;
+let conflict: { serverBy: string; serverAt: string } | null = null;
+
+const titleOf = (r: any, d: any) =>
+  r.type === 'page' ? (d.heading || d.seo?.title || r.title)
+  : r.type === 'treatment' ? d.title
+  : r.type === 'brand' ? d.name
+  : r.type === 'blogpost' ? d.title
+  : r.type === 'stylist' ? (d.displayName || 'Hairstylist')
+  : r.title;
+
+function persist(next: any, base: number) {
+  const oldPath = publicPathOf(rec!);
+  const saved = saveDraft(id, next, user.name, base);
+  const newPath = publicPathOf(saved);
+  if (oldPath && newPath && oldPath !== newPath) {
+    addRedirect(oldPath, newPath);
+    notice = `The page address changed; visitors to ${oldPath} are now redirected to ${newPath}.`;
+  }
+  // Keep the listing title in sync with the content.
+  const t = titleOf(saved, saved.draft);
+  if (t && t !== saved.title) {
+    db.prepare('UPDATE records SET title = ? WHERE id = ?').run(t, id);
+    saved.title = t;
+  }
+  rec = saved;
+}
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const base = Number(form.get('baseVersion') ?? rec.draft_version);
+  const listop = form.get('listop') ? String(form.get('listop')) : '';
+  const action = String(form.get('action') ?? (listop ? 'listop' : 'save'));
+  try {
+    if (action === 'autosave') {
+      try {
+        persist(applyForm(rec.draft, form), base);
+        return new Response(JSON.stringify({ ok: true, version: rec.draft_version }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (e) {
+        const message =
+          e instanceof VersionConflictError
+            ? 'Someone else saved newer changes; reload this page before editing further.'
+            : 'Automatic save failed; use Save draft.';
+        return new Response(JSON.stringify({ ok: false, message }), {
+          status: e instanceof VersionConflictError ? 409 : 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    if (listop) {
+      let next = applyForm(rec.draft, form);
+      const [op, listPath, idxRaw] = listop.split('|');
+      const kind = String(form.get(`addkind:${listPath}`) ?? form.get('addkind') ?? 'richtext');
+      next = applyListOp(next, op, listPath, Number(idxRaw), kind);
+      persist(next, base);
+      return Astro.redirect(`/studio/edit/${id}?saved=1`);
+    } else if (action === 'save') {
+      persist(applyForm(rec.draft, form), base);
+      return Astro.redirect(`/studio/edit/${id}?saved=1`);
+    } else if (action === 'publish') {
+      persist(applyForm(rec.draft, form), base);
+      problems = validateForPublish(rec!);
+      if (!problems.some((p) => p.level === 'error')) confirmPublish = true;
+    } else if (action === 'publish-confirm') {
+      if (!mayPublish) {
+        notice = 'Your account can prepare drafts; ask the owner to publish this change.';
+      } else {
+        problems = validateForPublish(rec!);
+        if (problems.some((p) => p.level === 'error')) {
+          notice = 'This content is not ready to publish; the problems are shown beside the fields.';
+        } else {
+          publishRecord(id, user.name);
+          return Astro.redirect(`/studio/edit/${id}?published=1`);
+        }
+      }
+    } else if (action === 'discard') {
+      if (rec.published) {
+        persist(structuredClone(rec.published), base);
+        return Astro.redirect(`/studio/edit/${id}?discarded=1`);
+      }
+    } else if (action === 'unpublish') {
+      if (mayPublish) {
+        const uses = usedOn(id, id);
+        unpublishRecord(id, user.name);
+        return Astro.redirect(`/studio/edit/${id}?unpublished=1`);
+      }
+    } else if (action === 'delete') {
+      const deletable = ['blogpost', 'brand', 'stylist'].includes(rec.type) || id.startsWith('page:custom-');
+      const uses = usedOn((rec.draft as any).id ?? id, id);
+      if (!deletable) notice = 'This core content cannot be deleted, only edited or hidden.';
+      else if (uses.length) notice = `Still used on: ${uses.map((u) => u.title).join(', ')}. Remove it there first.`;
+      else {
+        deleteRecord(id, user.name);
+        return Astro.redirect(`/studio/list/${rec.type}`);
+      }
+    }
+  } catch (e) {
+    if (e instanceof VersionConflictError) {
+      conflict = { serverBy: e.current.updated_by, serverAt: e.current.updated_at };
+      rec = e.current as any;
+      notice = 'Someone else saved this content while you were editing. Their newer version is shown below and nothing was overwritten; your typed changes are NOT saved, so copy anything you need before editing again.';
+    } else {
+      throw e;
+    }
+  }
+}
+
+const d: any = rec.draft;
+const q = Astro.url.searchParams;
+if (q.get('saved')) notice = notice || 'Draft saved. Preview it, then publish when ready.';
+if (q.get('published')) notice = 'Published. The live website and assistant content are updated.';
+if (q.get('discarded')) notice = 'Unpublished changes discarded; the draft matches the live website again.';
+if (q.get('unpublished')) notice = 'Taken off the website. It is kept here as a draft.';
+
+const badge = statusBadge(rec);
+const path = publicPathOf(rec);
+const label = TYPE_LABELS[rec.type]?.one ?? 'Content';
+const uses = ['service-group', 'stylist'].includes(rec.type) || rec.type === 'brand' ? usedOn((d.id ?? id), id) : [];
+const problemFor = (field: string) => problems.find((p) => p.field === field)?.message;
+const warnings = problems.filter((p) => p.level === 'warning');
+const activeId =
+  rec.type === 'page' ? 'pages' : rec.type === 'treatment' ? 'treatments' : rec.type === 'service-group' ? 'catalogue'
+  : rec.type === 'stylist' ? 'stylists' : rec.type === 'brand' ? 'brands' : rec.type === 'blogpost' ? 'blog'
+  : id === 'settings:nav' ? 'menus' : id === 'settings:site' ? 'business' : 'overview';
+
+const groupOptions = listRecords('service-group').map((g) => ({ value: (g.draft as any).id, label: g.title }));
+---
+
+<Studio title={rec.title} active={activeId}>
+  <div class="studio-head">
+    <div>
+      <p style="margin: 0; color: var(--muted); font-size: 0.85rem;">{label}</p>
+      <h1>{rec.title}</h1>
+      <p class="lede">
+        <span class={`badge ${badge.cls}`}>{badge.label}</span>
+        &nbsp; Last edited {rec.updated_at.slice(0, 16).replace('T', ' ')} by {rec.updated_by}
+      </p>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      {path && <a class="btn" href={`${path}?preview=draft`} target="_blank" rel="noopener">Preview draft ↗</a>}
+      {path && rec.published && <a class="btn" href={path} target="_blank" rel="noopener">View live ↗</a>}
+      <a class="btn" href={`/studio/history/${id}`}>History</a>
+    </div>
+  </div>
+
+  {notice && <p class={`notice ${conflict ? 'warn' : q.get('published') ? 'ok' : 'ok'}`}>{notice}</p>}
+  {problems.some((p) => p.level === 'error') && (
+    <div class="notice bad">
+      <b>Not ready to publish yet:</b>
+      <ul style="margin: 6px 0 0; padding-left: 18px;">
+        {problems.filter((p) => p.level === 'error').map((p) => <li>{p.message}</li>)}
+      </ul>
+    </div>
+  )}
+
+  {confirmPublish && (
+    <div class="panel" style="border-color: var(--primary);">
+      <h2>Publish this?</h2>
+      <p>
+        Publishing makes the current draft live for every visitor
+        {rec.type === 'service-group' ? ', and updates every page that shows these prices, the booking selector and the assistant content in one step' : ' and updates the assistant content'}.
+      </p>
+      {uses.length > 0 && (
+        <p><b>Used on:</b> {uses.map((u) => u.title).join(' · ')}</p>
+      )}
+      {warnings.length > 0 && (
+        <div class="notice warn">
+          <b>Please check before publishing:</b>
+          <ul style="margin: 6px 0 0; padding-left: 18px;">
+            {warnings.map((w) => <li>{w.message}</li>)}
+          </ul>
+        </div>
+      )}
+      <form method="post" style="display: flex; gap: 10px; margin-top: 8px;">
+        <input type="hidden" name="baseVersion" value={rec.draft_version} />
+        {mayPublish ? (
+          <button class="btn primary" type="submit" name="action" value="publish-confirm">Yes, publish now</button>
+        ) : (
+          <p class="notice warn" style="margin: 0;">Your account prepares drafts; ask the owner to publish.</p>
+        )}
+        <a class="btn" href={`/studio/edit/${id}`}>Not yet</a>
+      </form>
+    </div>
+  )}
+
+  <form method="post" id="editor-form">
+    <input type="hidden" name="baseVersion" value={rec.draft_version} />
+
+    {/* ---------------- Business details ---------------- */}
+    {id === 'settings:site' && (
+      <Fragment>
+        <div class="panel">
+          <h2>Contact details</h2>
+          <div class="field-row">
+            <Field path="phoneDisplay" label="Telephone / WhatsApp (shown)" value={d.phoneDisplay} />
+            <Field path="phoneIntl" label="Telephone (international, digits only)" value={d.phoneIntl} help="Used for tel: links, e.g. +31641347401" />
+          </div>
+          <Field path="whatsappBase" label="WhatsApp link" value={d.whatsappBase} help="Normally https://wa.me/ followed by the number." />
+          <div class="field-row">
+            <Field path="email" label="Email address" value={d.email} help="The mailbox itself must exist; activation is still an open item." />
+            <Field path="instagram" label="Instagram" value={d.instagram} />
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Address and appointments</h2>
+          <div class="field-row">
+            <Field path="streetAddress" label="Street and number" value={d.streetAddress} />
+            <Field path="locality" label="City" value={d.locality} />
+          </div>
+          <Field path="addressLine" label="Address as shown on the site" value={d.addressLine} />
+          <Field path="availability" label="Appointment days" value={d.availability} />
+          <Field path="walkIns" label="Walk-ins note" value={d.walkIns} />
+          <Field path="onLocationArea" label="On-location area" value={d.onLocationArea} />
+        </div>
+        <div class="panel">
+          <h2>Site-wide</h2>
+          <Field path="name" label="Business name" value={d.name} />
+          <Field path="tagline" label="Tagline" value={d.tagline} />
+          <Field path="url" label="Website address" value={d.url} help="Used for search results and the sitemap. Domain control is still to be confirmed." />
+        </div>
+      </Fragment>
+    )}
+
+    {/* ---------------- Menus & footer ---------------- */}
+    {id === 'settings:nav' && (
+      <Fragment>
+        <div class="panel">
+          <h2>Menu</h2>
+          <p class="help" style="margin-bottom: 14px;">The order here is the order in the site menu. Renaming a label changes only the label, not the page address.</p>
+          {(d.items ?? []).map((item: any, i: number) => (
+            <div class="section-card">
+              <div class="section-card-head">
+                <b>{item.label || 'Menu item'}</b>
+                <ListTools listPath="items" index={i} canHide={false} />
+              </div>
+              <div class="field-row">
+                <Field path={`items.${i}.label`} label="Label" value={item.label} />
+                <Field path={`items.${i}.href`} label="Destination" value={item.href} widget="url" help={item.children?.length ? 'Leave empty for a group that only opens its child links.' : undefined} />
+              </div>
+              {(item.children ?? []).map((c: any, j: number) => (
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0 12px; align-items: end;">
+                  <Field path={`items.${i}.children.${j}.label`} label={j === 0 ? 'Child label' : ''} value={c.label} />
+                  <Field path={`items.${i}.children.${j}.href`} label={j === 0 ? 'Child destination' : ''} value={c.href} widget="url" />
+                  <div class="field"><ListTools listPath={`items.${i}.children`} index={j} canHide={false} /></div>
+                </div>
+              ))}
+              <button class="btn small" type="submit" name="listop" value={`add|items.${i}.children|-1`}>Add a child link</button>
+            </div>
+          ))}
+          <button class="btn" type="submit" name="listop" value="add|items|-1">Add a menu item</button>
+        </div>
+        <div class="panel">
+          <h2>Footer</h2>
+          <Field path="footerAbout" label="Short footer description" value={d.footerAbout} widget="textarea" />
+          <Field path="footerNote" label="Bottom-right note" value={d.footerNote} />
+        </div>
+      </Fragment>
+    )}
+
+    {/* ---------------- Booking rules ---------------- */}
+    {id === 'settings:booking' && (
+      <div class="panel">
+        <h2>Shared booking wording</h2>
+        <Field path="globalPriceCondition" label="Price condition (shown beneath relevant services)" value={d.globalPriceCondition} widget="textarea" />
+        <Field path="consultationNote" label="Colour consultation explanation" value={d.consultationNote} widget="textarea" />
+        <Field path="allergyNote" label="Allergy note" value={d.allergyNote} widget="textarea" />
+        {(d.hairLengths ?? []).map((l: any, i: number) => (
+          <div class="field-row">
+            <Field path={`hairLengths.${i}.name`} label={`Length ${i + 1}: name`} value={l.name} />
+            <Field path={`hairLengths.${i}.def`} label="Customer-facing definition" value={l.def} />
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* ---------------- Home page ---------------- */}
+    {rec.type === 'page' && d.template === 'home' && (
+      <Fragment>
+        <div class="panel">
+          <h2>Opening image</h2>
+          <Field path="hero.visible" label="Show this section" value={d.hero.visible} widget="checkbox" />
+          <MediaPicker path="hero.mediaDesktop" label="Landscape photo (desktop)" value={d.hero.mediaDesktop} allowNone={false} problem={problemFor('hero.mediaDesktop')} help="The brief asks for a real landscape photo of the owner or the salon; the current image is a flagged stand-in crop." />
+          <MediaPicker path="hero.mediaMobile" label="Photo for phones" value={d.hero.mediaMobile} problem={problemFor('hero.mediaMobile')} />
+          <div class="field-row">
+            <Field path="hero.bookingLabel" label="Booking button text" value={d.hero.bookingLabel} />
+            <Field path="hero.bookingHref" label="Booking button destination" value={d.hero.bookingHref} widget="url" />
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Introduction</h2>
+          <Field path="intro.visible" label="Show this section" value={d.intro.visible} widget="checkbox" />
+          <Field path="intro.heading" label="Heading (the MC statement)" value={d.intro.heading} widget="textarea" />
+          <Field path="intro.body" label="Introduction text" value={d.intro.body} widget="rich" tall />
+          <Field path="intro.tagline" label="Tagline line" value={d.intro.tagline} />
+          <Field path="intro.watermark" label="Show the faint MC monogram behind the introduction" value={d.intro.watermark} widget="checkbox" />
+          <div class="field-row">
+            <Field path="intro.primaryCta.label" label="First button" value={d.intro.primaryCta?.label} />
+            <Field path="intro.primaryCta.href" label="First button destination" value={d.intro.primaryCta?.href} widget="url" />
+          </div>
+          <div class="field-row">
+            <Field path="intro.secondaryCta.label" label="Second button" value={d.intro.secondaryCta?.label} />
+            <Field path="intro.secondaryCta.href" label="Second button destination" value={d.intro.secondaryCta?.href} widget="url" />
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Moving About cards</h2>
+          <Field path="aboutCards.visible" label="Show this section" value={d.aboutCards.visible} widget="checkbox" />
+          <div class="field-row">
+            <Field path="aboutCards.heading" label="Heading" value={d.aboutCards.heading} />
+            <Field path="aboutCards.speed" label="Movement" value={d.aboutCards.speed} widget="select" options={[{ value: 'standard', label: 'Standard' }, { value: 'slow', label: 'Slow' }]} />
+          </div>
+          <Field path="aboutCards.autoMove" label="Move automatically (always pausable; touch screens swipe instead; reduced motion shows a still grid)" value={d.aboutCards.autoMove} widget="checkbox" />
+          {(d.aboutCards.cards ?? []).map((c: any, i: number) => (
+            <div class={`section-card ${c.visible === false ? 'hidden-section' : ''}`}>
+              <div class="section-card-head">
+                <b>Card {i + 1}: {c.title || 'untitled'}</b>
+                <ListTools listPath="aboutCards.cards" index={i} hidden={c.visible === false} />
+              </div>
+              <MediaPicker path={`aboutCards.cards.${i}.media`} label="Photo" value={c.media} allowNone={false} problem={problemFor(`aboutCards.cards.${i}.media`)} />
+              <div class="field-row">
+                <Field path={`aboutCards.cards.${i}.label`} label="Small label" value={c.label} />
+                <Field path={`aboutCards.cards.${i}.title`} label="Title" value={c.title} problem={problemFor(`aboutCards.cards.${i}.title`)} />
+              </div>
+              <Field path={`aboutCards.cards.${i}.summary`} label="One-line summary" value={c.summary} />
+              <div class="field-row">
+                <Field path={`aboutCards.cards.${i}.cta`} label="Action text" value={c.cta} />
+                <Field path={`aboutCards.cards.${i}.href`} label="Destination" value={c.href} widget="url" problem={problemFor(`aboutCards.cards.${i}.href`)} />
+              </div>
+            </div>
+          ))}
+          <button class="btn" type="submit" name="listop" value="add|aboutCards.cards|-1">Add a card</button>
+        </div>
+
+        <div class="panel">
+          <h2>Brand strip</h2>
+          <Field path="brands.visible" label="Show this section" value={d.brands.visible} widget="checkbox" />
+          <div class="field-row">
+            <Field path="brands.heading" label="Heading" value={d.brands.heading} />
+            <Field path="brands.speed" label="Movement" value={d.brands.speed} widget="select" options={[{ value: 'standard', label: 'Standard' }, { value: 'slow', label: 'Slow' }]} />
+          </div>
+          <Field path="brands.autoMove" label="Move automatically" value={d.brands.autoMove} widget="checkbox" />
+          <p class="help">Which brands appear (and their order) is managed under <a href="/studio/list/brand">Brands</a>; only confirmed, visible brands are shown.</p>
+        </div>
+
+        <div class="panel">
+          <h2>Treatment list</h2>
+          <Field path="explorer.visible" label="Show this section" value={d.explorer.visible} widget="checkbox" />
+          <Field path="explorer.heading" label="Heading" value={d.explorer.heading} />
+          <Field path="explorer.lede" label="Introduction line" value={d.explorer.lede} widget="textarea" />
+          <Field path="explorer.footerLink" label="Catalogue link text" value={d.explorer.footerLink} />
+          <p class="help">The rows, summaries and hover descriptions come from each treatment page under <a href="/studio/list/treatment">Treatments</a>.</p>
+        </div>
+
+        <div class="panel">
+          <h2>Salon Party feature</h2>
+          <Field path="salonParty.visible" label="Show this section" value={d.salonParty.visible} widget="checkbox" />
+          <MediaPicker path="salonParty.media" label="Photo" value={d.salonParty.media} />
+          <Field path="salonParty.heading" label="Heading" value={d.salonParty.heading} />
+          <Field path="salonParty.body" label="Text" value={d.salonParty.body} widget="rich" />
+          <div class="field-row">
+            <Field path="salonParty.cta" label="Button text" value={d.salonParty.cta} />
+            <Field path="salonParty.href" label="Button destination" value={d.salonParty.href} widget="url" />
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Recent work</h2>
+          <Field path="recentWork.visible" label="Show this section" value={d.recentWork.visible} widget="checkbox" />
+          <Field path="recentWork.heading" label="Heading" value={d.recentWork.heading} />
+          {(d.recentWork.media ?? []).map((m: string, i: number) => (
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end;">
+              <MediaPicker path={`recentWork.media.${i}`} label={`Photo ${i + 1}`} value={m} allowNone={false} problem={problemFor(`recentWork.media.${i}`)} />
+              <div class="field"><ListTools listPath="recentWork.media" index={i} canHide={false} /></div>
+            </div>
+          ))}
+          <button class="btn small" type="submit" name="listop" value="add|recentWork.media|-1">Add a photo</button>
+        </div>
+
+        <div class="panel">
+          <h2>Practical block</h2>
+          <Field path="practical.visible" label="Show this section" value={d.practical.visible} widget="checkbox" />
+          <Field path="practical.heading" label="Heading" value={d.practical.heading} />
+          <Field path="practical.body" label="Text" value={d.practical.body} widget="rich" help="Contact details themselves come from Business details, so they stay correct everywhere." />
+        </div>
+
+        <div class="panel">
+          <h2>Search result</h2>
+          <Field path="seo.title" label="Search title" value={d.seo.title} problem={problemFor('seo.title')} />
+          <Field path="seo.description" label="Search description" value={d.seo.description} widget="textarea" problem={problemFor('seo.description')} />
+        </div>
+      </Fragment>
+    )}
+
+    {/* ---------------- Standard / business pages ---------------- */}
+    {rec.type === 'page' && d.template !== 'home' && (
+      <Fragment>
+        <div class="panel">
+          <h2>Heading</h2>
+          <div class="field-row">
+            <Field path="eyebrow" label="Small label above the title" value={d.eyebrow} />
+            <Field path="heading" label="Page title" value={d.heading} problem={problemFor('heading')} />
+          </div>
+          <Field path="lede" label="Introduction line" value={d.lede} widget="textarea" />
+        </div>
+
+        {d.sections && (
+          <div class="panel" id="sections">
+            <h2>Sections</h2>
+            {(d.sections ?? []).map((s: any, i: number) => (
+              <div class={`section-card ${s.visible === false ? 'hidden-section' : ''}`}>
+                <div class="section-card-head">
+                  <b>{i + 1} · {s.type === 'richtext' ? 'Text' : s.type === 'image_text' ? 'Photo and text' : s.type === 'image' ? 'Photo' : s.type === 'faq' ? 'Questions and answers' : s.type === 'cta' ? 'Link / button' : 'Quote'}</b>
+                  <ListTools listPath="sections" index={i} hidden={s.visible === false} />
+                </div>
+                {(s.type === 'richtext') && <Field path={`sections.${i}.text`} label="Text" value={s.text} widget="rich" tall />}
+                {(s.type === 'quote') && <Field path={`sections.${i}.text`} label="Quote" value={s.text} widget="textarea" />}
+                {(s.type === 'image') && (
+                  <Fragment>
+                    <MediaPicker path={`sections.${i}.media`} label="Photo" value={s.media} allowNone={false} problem={problemFor(`sections.${i}.media`)} />
+                    <Field path={`sections.${i}.caption`} label="Caption (optional)" value={s.caption} />
+                  </Fragment>
+                )}
+                {(s.type === 'image_text') && (
+                  <Fragment>
+                    <MediaPicker path={`sections.${i}.media`} label="Photo" value={s.media} allowNone={false} problem={problemFor(`sections.${i}.media`)} />
+                    <Field path={`sections.${i}.text`} label="Text" value={s.text} widget="rich" />
+                  </Fragment>
+                )}
+                {(s.type === 'faq') && (
+                  <Fragment>
+                    {(s.items ?? []).map((f: any, j: number) => (
+                      <div class="section-card">
+                        <div class="section-card-head"><b>Question {j + 1}</b><ListTools listPath={`sections.${i}.items`} index={j} canHide={false} /></div>
+                        <Field path={`sections.${i}.items.${j}.q`} label="Question" value={f.q} />
+                        <Field path={`sections.${i}.items.${j}.a`} label="Answer" value={f.a} widget="rich" />
+                      </div>
+                    ))}
+                    <button class="btn small" type="submit" name="listop" value={`add|sections.${i}.items|-1`}>Add a question</button>
+                    <p class="help">Questions and answers supplement a page; essential explanations belong in an ordinary text section.</p>
+                  </Fragment>
+                )}
+                {(s.type === 'cta') && (
+                  <div class="field-row">
+                    <Field path={`sections.${i}.label`} label="Text" value={s.label} />
+                    <Field path={`sections.${i}.href`} label="Destination" value={s.href} widget="url" problem={problemFor(`sections.${i}.href`)} />
+                  </div>
+                )}
+              </div>
+            ))}
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <label for="addkind" style="font-weight: 600;">Add a section:</label>
+              <select id="addkind" name="addkind" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font: inherit;">
+                <option value="richtext">Text</option>
+                <option value="image">Photo</option>
+                <option value="image_text">Photo and text</option>
+                <option value="quote">Quote</option>
+                <option value="faq">Questions and answers</option>
+                <option value="cta">Link / button</option>
+              </select>
+              <button class="btn" type="submit" name="listop" value="add|sections|-1">Add</button>
+            </div>
+          </div>
+        )}
+
+        {d.template === 'business' && (
+          <div class="panel">
+            <h2>Page content</h2>
+            <MediaPicker path="media" label="Photo" value={d.media} problem={problemFor('media')} />
+            <Field path="body" label="Text" value={d.body} widget="rich" tall />
+            <div class="field-row">
+              <Field path="enquiryHeading" label="Enquiry form heading" value={d.enquiryHeading} />
+              <Field path="enquiryType" label="Enquiry type" value={d.enquiryType} widget="select" options={[{ value: 'Salon Party', label: 'Salon Party' }, { value: 'Organisation', label: 'Organisation' }, { value: 'Care Home', label: 'Care Home' }]} />
+            </div>
+          </div>
+        )}
+
+        {d.template === 'gallery' && (
+          <div class="panel">
+            <h2>Photos</h2>
+            {(d.media ?? []).map((m: string, i: number) => (
+              <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end;">
+                <MediaPicker path={`media.${i}`} label={`Photo ${i + 1}`} value={m} allowNone={false} problem={problemFor(`media.${i}`)} />
+                <div class="field"><ListTools listPath="media" index={i} canHide={false} /></div>
+              </div>
+            ))}
+            <button class="btn small" type="submit" name="listop" value="add|media|-1">Add a photo</button>
+            <Field path="note" label="Note under the gallery" value={d.note} widget="rich" />
+            <p class="help">Before/after pairs are only ever labelled once the owner has verified the pairing; unverified photos appear as ordinary gallery images.</p>
+          </div>
+        )}
+
+        {d.template === 'blog-index' && (
+          <div class="panel">
+            <h2>Planned topics</h2>
+            <Field path="topics" label="Topics (shown while no articles are published)" value={d.topics} widget="lines" />
+          </div>
+        )}
+
+        {d.template === 'contact' && (
+          <div class="panel">
+            <h2>Contact page</h2>
+            <Field path="brandsLine" label="Introduction to the brand list" value={d.brandsLine} />
+            <p class="help">The contact details themselves come from <a href="/studio/edit/settings:site">Business details</a>.</p>
+          </div>
+        )}
+
+        {d.template === 'book' && (
+          <div class="panel">
+            <h2>Booking steps</h2>
+            {(d.steps ?? []).map((s: any, i: number) => (
+              <div class="section-card">
+                <div class="section-card-head"><b>Step {i + 1}</b><ListTools listPath="steps" index={i} canHide={false} /></div>
+                <div class="field-row">
+                  <Field path={`steps.${i}.t`} label="Title" value={s.t} />
+                  <Field path={`steps.${i}.d`} label="Explanation" value={s.d} />
+                </div>
+              </div>
+            ))}
+            <button class="btn small" type="submit" name="listop" value="add|steps|-1">Add a step</button>
+            <p class="help">The treatment list, prices and the colour consultation rule come from <a href="/studio/list/service-group">Services & prices</a> and <a href="/studio/edit/settings:booking">Booking rules</a>.</p>
+          </div>
+        )}
+
+        {d.template === 'stylists' && (
+          <p class="notice ok">The profiles themselves live under <a href="/studio/list/stylist">Hairstylists</a>; this page provides the heading around them.</p>
+        )}
+
+        {d.template === 'treatments-index' && (
+          <p class="notice ok">The catalogue itself comes from <a href="/studio/list/service-group">Services & prices</a> and the treatment pages; this page provides the heading around it.</p>
+        )}
+
+        <div class="panel">
+          <h2>Search result</h2>
+          <Field path="seo.title" label="Search title" value={d.seo?.title} problem={problemFor('seo.title')} />
+          <Field path="seo.description" label="Search description" value={d.seo?.description} widget="textarea" problem={problemFor('seo.description')} />
+          <details class="advanced">
+            <summary>Advanced: page address</summary>
+            <Field path="slug" label="Page address (slug)" value={d.slug} help="Changing this changes the page's web address; the old address is redirected automatically." />
+          </details>
+        </div>
+      </Fragment>
+    )}
+
+    {/* ---------------- Treatment ---------------- */}
+    {rec.type === 'treatment' && (
+      <Fragment>
+        <div class="panel">
+          <h2>Treatment page</h2>
+          <div class="field-row">
+            <Field path="title" label="Name" value={d.title} problem={problemFor('title')} />
+            <Field path="menuLabel" label="Menu label" value={d.menuLabel} />
+          </div>
+          <Field path="lede" label="Introduction line" value={d.lede} />
+          <MediaPicker path="media" label="Photo" value={d.media} problem={problemFor('media')} />
+          <Field path="body" label="Explanation" value={d.body} widget="rich" tall help="What the service is, who it suits, preparation and aftercare where relevant." />
+        </div>
+        <div class="panel">
+          <h2>On the homepage and treatments overview</h2>
+          <Field path="summary" label="Always-visible summary" value={d.summary} widget="textarea" problem={problemFor('summary')} />
+          <Field path="preview" label="Extra sentence shown on hover" value={d.preview} widget="textarea" help="Keep prices out of this sentence unless they match the shared catalogue; the catalogue is the single source of prices." />
+          <Field path="order" label="Position in the list (1 is first)" value={d.order} widget="number" />
+        </div>
+        <div class="panel">
+          <h2>Prices shown on this page</h2>
+          {(d.groups ?? []).map((g: string, i: number) => (
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end;">
+              <Field path={`groups.${i}`} label={`Price group ${i + 1}`} value={g} widget="select" options={groupOptions} problem={problemFor(`groups.${i}`)} />
+              <div class="field"><ListTools listPath="groups" index={i} canHide={false} /></div>
+            </div>
+          ))}
+          <button class="btn small" type="submit" name="listop" value="add|groups|-1">Add a price group</button>
+          <p class="help">The groups themselves (descriptions, prices, durations) are edited under <a href="/studio/list/service-group">Services & prices</a>, so every page stays consistent.</p>
+        </div>
+        <div class="panel">
+          <h2>Booking action</h2>
+          <div class="field-row">
+            <Field path="ctaLabel" label="Button text" value={d.ctaLabel} />
+            <Field path="waMessage" label="Prepared WhatsApp message" value={d.waMessage} />
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Search result</h2>
+          <Field path="metaTitle" label="Search title" value={d.metaTitle} />
+          <Field path="seoDescription" label="Search description" value={d.seoDescription} widget="textarea" problem={problemFor('seoDescription')} />
+          <details class="advanced">
+            <summary>Advanced: page address</summary>
+            <Field path="slug" label="Page address (slug)" value={d.slug} problem={problemFor('slug')} help="Changing this changes the page's web address; the old address is redirected automatically." />
+          </details>
+        </div>
+      </Fragment>
+    )}
+
+    {/* ---------------- Service group ---------------- */}
+    {rec.type === 'service-group' && (
+      <Fragment>
+        {uses.length > 0 && (
+          <p class="notice warn"><b>Used on:</b> {uses.map((u) => u.title).join(' · ')}. Publishing updates all of them together.</p>
+        )}
+        <div class="panel">
+          <h2>Group</h2>
+          <div class="field-row">
+            <Field path="title" label="Group name" value={d.title} problem={problemFor('title')} />
+            <Field path="category" label="Category" value={d.category} widget="select" options={['Haircuts','Styling','Colour','Highlights','Hair Care','Superloop','Gracefully Grey','Massage','Coaching'].map((c) => ({ value: c, label: c }))} />
+          </div>
+          <Field path="sharedCopy" label="Shared explanation above the prices" value={d.sharedCopy} widget="textarea" />
+          <Field path="globalCondition" label="Show the shared price condition beneath this group" value={d.globalCondition} widget="checkbox" />
+          <Field path="consultationGated" label="Consultation required before booking (colour gate: these services cannot be requested directly)" value={d.consultationGated} widget="checkbox" />
+        </div>
+        <div class="panel">
+          <h2>Services and prices</h2>
+          {(d.options ?? []).map((o: any, i: number) => (
+            <div class="section-card">
+              <div class="section-card-head"><b>{o.name || `Service ${i + 1}`}</b><ListTools listPath="options" index={i} canHide={false} /></div>
+              <Field path={`options.${i}.name`} label="Name" value={o.name} problem={problemFor(`options.${i}.name`)} />
+              <Field path={`options.${i}.copy`} label="Short description" value={o.copy} widget="textarea" />
+              <div class="field-row">
+                <Field path={`options.${i}.priceType`} label="How the price works" value={o.priceType} widget="select" problem={problemFor(`options.${i}.priceType`)} options={[
+                  { value: 'fixed', label: 'Fixed price' },
+                  { value: 'from', label: 'From price (may vary with product/time)' },
+                  { value: 'consultation', label: 'Consultation fee (deducted from the treatment)' },
+                  { value: 'quote', label: 'Personal quotation (no amount shown)' },
+                ]} />
+                <Field path={`options.${i}.amount`} label="Amount (€)" value={o.amount} widget="number" problem={problemFor(`options.${i}.amount`)} help="Leave empty for a personal quotation. An unknown amount never becomes €0." />
+              </div>
+              <Field path={`options.${i}.duration`} label="Duration shown to customers" value={o.duration} help="Leave empty to keep the duration internal (haircuts) or unknown." />
+            </div>
+          ))}
+          <button class="btn" type="submit" name="listop" value="add|options|-1">Add a service</button>
+        </div>
+        <div class="panel">
+          <h2>Notes under the table</h2>
+          {(d.notes ?? []).map((n: string, i: number) => (
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end;">
+              <Field path={`notes.${i}`} label={`Note ${i + 1}`} value={n} widget="textarea" />
+              <div class="field"><ListTools listPath="notes" index={i} canHide={false} /></div>
+            </div>
+          ))}
+          <button class="btn small" type="submit" name="listop" value="add|notes|-1">Add a note</button>
+        </div>
+      </Fragment>
+    )}
+
+    {/* ---------------- Stylist ---------------- */}
+    {rec.type === 'stylist' && (
+      <Fragment>
+        <div class="panel">
+          <h2>Profile</h2>
+          <div class="field-row">
+            <Field path="displayName" label="Display name" value={d.displayName} problem={problemFor('displayName')} help="Still an open item for the current profile: the owner has not yet confirmed the public name." />
+            <Field path="role" label="Role" value={d.role} />
+          </div>
+          <MediaPicker path="portrait" label="Portrait" value={d.portrait} allowNone={false} problem={problemFor('portrait')} />
+          <Field path="intro" label="Short introduction" value={d.intro} widget="textarea" />
+          <Field path="story" label="Full story" value={d.story} widget="rich" tall problem={problemFor('story')} />
+          <Field path="specialties" label="Specialties" value={d.specialties} widget="lines" />
+          <div class="field-row">
+            <Field path="bookingHref" label="Booking destination" value={d.bookingHref} widget="url" />
+            <Field path="order" label="Position in the list" value={d.order} widget="number" />
+          </div>
+          <Field path="active" label="Active (only real, active profiles are shown or given to the assistant)" value={d.active} widget="checkbox" />
+        </div>
+      </Fragment>
+    )}
+
+    {/* ---------------- Brand ---------------- */}
+    {rec.type === 'brand' && (
+      <div class="panel">
+        <h2>Brand</h2>
+        <Field path="name" label="Brand name" value={d.name} problem={problemFor('name')} />
+        <div class="field-row">
+          <Field path="order" label="Position in the strip" value={d.order} widget="number" />
+          <Field path="url" label="Link (optional, only with a real approved destination)" value={d.url} widget="url" />
+        </div>
+        <Field path="confirmed" label="Confirmed: Maison Coiffure actually uses or works with this brand" value={d.confirmed} widget="checkbox" problem={problemFor('confirmed')} />
+        <Field path="visible" label="Show on the website" value={d.visible} widget="checkbox" />
+        <Field path="note" label="Internal note (never published, never given to the assistant)" value={d.note} widget="textarea" />
+        <p class="help">Logo artwork: real brand marks with usage permission are still awaited; until then the confirmed name is shown in the site's own type.</p>
+      </div>
+    )}
+
+    {/* ---------------- Blog post ---------------- */}
+    {rec.type === 'blogpost' && (
+      <Fragment>
+        <div class="panel">
+          <h2>Article</h2>
+          <Field path="title" label="Title" value={d.title} problem={problemFor('title')} />
+          <Field path="summary" label="Summary" value={d.summary} widget="textarea" />
+          <Field path="body" label="Article text" value={d.body} widget="rich" tall problem={problemFor('body')} />
+          <MediaPicker path="media" label="Cover photo" value={d.media} problem={problemFor('media')} />
+          <div class="field-row">
+            <Field path="author" label="Author (a real person)" value={d.author} problem={problemFor('author')} />
+            <Field path="category" label="Category" value={d.category} />
+          </div>
+          <div class="field-row">
+            <Field path="publishedDate" label="Publication date" value={d.publishedDate} widget="date" />
+            <Field path="slug" label="Page address (slug)" value={d.slug} problem={problemFor('slug')} />
+          </div>
+        </div>
+      </Fragment>
+    )}
+
+    <div class="save-bar">
+      <button class="btn primary" type="submit" name="action" value="save">Save draft</button>
+      <button class="btn" type="submit" name="action" value="publish">Publish…</button>
+      {rec.published && rec.draft_version > rec.published_version && (
+        <button class="btn" type="submit" name="action" value="discard">Discard unpublished changes</button>
+      )}
+      {rec.published && !['settings'].includes(rec.type) && !['page:home', 'page:treatments', 'page:contact', 'page:book'].includes(id) && (
+        <button class="btn danger" type="submit" name="action" value="unpublish" onclick="return confirm('Take this off the website? It stays here as a draft.')">Take off the website</button>
+      )}
+      {(['blogpost', 'brand', 'stylist'].includes(rec.type) || id.startsWith('page:custom-')) && (
+        <button class="btn danger" type="submit" name="action" value="delete" onclick="return confirm('Delete this completely? Its history stays in the record log.')">Delete</button>
+      )}
+      <span class="status" id="autosave-status">Changes are kept as a private draft until you publish.</span>
+    </div>
+  </form>
+
+  {path && (
+    <div style="margin-top: 34px;">
+      <h2 style="margin-bottom: 10px;">Draft preview</h2>
+      <div class="preview-pane"><iframe src={`${path}?preview=draft`} title="Draft preview"></iframe></div>
+    </div>
+  )}
+
+  <script is:inline>
+    /* Autosave the draft while editing (every 25s when something changed). */
+    (function () {
+      var form = document.getElementById('editor-form');
+      var status = document.getElementById('autosave-status');
+      if (!form || !status) return;
+      var dirty = false;
+      form.addEventListener('input', function () { dirty = true; });
+      setInterval(function () {
+        if (!dirty) return;
+        dirty = false;
+        var data = new FormData(form);
+        data.set('action', 'autosave');
+        fetch(location.pathname + '?autosave=1', { method: 'POST', body: data })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j.ok) {
+              form.querySelector('input[name="baseVersion"]').value = j.version;
+              status.textContent = 'Draft saved automatically at ' + new Date().toLocaleTimeString();
+            } else {
+              status.textContent = j.message || 'Automatic save paused; use Save draft.';
+            }
+          })
+          .catch(function () { status.textContent = 'Automatic save failed; use Save draft.'; });
+      }, 25000);
+    })();
+  </script>
+</Studio>

@@ -1,0 +1,159 @@
+---
+import Studio from '../../layouts/Studio.astro';
+import { listUsers, createUser, deleteUser } from '../../lib/auth';
+import { getConfig, setConfig, db, DATA_DIR } from '../../lib/db';
+import { randomBytes } from 'node:crypto';
+
+const user = (Astro.locals as any).user;
+let notice = '';
+let bad = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = String(form.get('action'));
+  if (user.role !== 'owner') {
+    bad = 'Only the owner can change settings.';
+  } else if (action === 'invite') {
+    const name = String(form.get('name') ?? '').trim();
+    const email = String(form.get('email') ?? '').trim();
+    const password = String(form.get('password') ?? '');
+    const publish = form.get('can_publish') === 'on';
+    if (!name || !email.includes('@') || password.length < 10) bad = 'Fill in a name, valid email and a password of at least 10 characters.';
+    else {
+      try {
+        createUser(email, name, 'editor', password, publish);
+        notice = `${name} can now sign in with that email and password. Ask them to change the password after their first sign-in (Settings appears for them without the access panel).`;
+      } catch {
+        bad = 'That email address already has an account.';
+      }
+    }
+  } else if (action === 'remove') {
+    deleteUser(String(form.get('id')));
+    notice = 'Access revoked.';
+  } else if (action === 'rotate-token') {
+    setConfig('assistant_token', randomBytes(24).toString('hex'));
+    notice = 'A new assistant token was generated; any existing integration must be updated with it.';
+  } else if (action === 'password') {
+    const { hashPassword, verifyPassword, findUserByEmail } = await import('../../lib/auth');
+    const current = String(form.get('current') ?? '');
+    const next = String(form.get('next') ?? '');
+    const me = findUserByEmail(user.email)!;
+    if (!verifyPassword(current, me.pass_hash)) bad = 'The current password is not right.';
+    else if (next.length < 10) bad = 'Choose a new password of at least 10 characters.';
+    else {
+      db.prepare('UPDATE users SET pass_hash = ? WHERE id = ?').run(hashPassword(next), user.id);
+      notice = 'Password changed.';
+    }
+  }
+}
+
+const users = listUsers();
+const token = getConfig('assistant_token');
+---
+
+<Studio title="Settings" active="settings">
+  <div class="studio-head">
+    <div>
+      <h1>Settings</h1>
+      <p class="lede">Access, the assistant connection, backups and your password.</p>
+    </div>
+  </div>
+
+  {notice && <p class="notice ok">{notice}</p>}
+  {bad && <p class="notice bad">{bad}</p>}
+
+  {user.role === 'owner' && (
+    <div class="panel">
+      <h2>Who can edit</h2>
+      <table class="list">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead>
+        <tbody>
+          {users.map((u) => (
+            <tr>
+              <td>{u.name}</td>
+              <td>{u.email}</td>
+              <td>{u.role === 'owner' ? 'Owner (edits, publishes, manages access)' : u.can_publish ? 'Editor (may publish)' : 'Editor (drafts only)'}</td>
+              <td class="actions">
+                {u.role !== 'owner' && (
+                  <form method="post" style="display: inline;">
+                    <input type="hidden" name="action" value="remove" />
+                    <input type="hidden" name="id" value={u.id} />
+                    <button class="btn small danger" type="submit" onclick="return confirm('Revoke access for this person?')">Revoke</button>
+                  </form>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3>Invite an editor</h3>
+      <form method="post">
+        <input type="hidden" name="action" value="invite" />
+        <div class="field-row">
+          <div class="field"><label for="in-name">Name</label><input id="in-name" name="name" type="text" required /></div>
+          <div class="field"><label for="in-email">Email</label><input id="in-email" name="email" type="email" required /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label for="in-pass">Starting password</label><input id="in-pass" name="password" type="password" minlength="10" required /></div>
+          <div class="field" style="align-self: end;"><label class="check"><input type="checkbox" name="can_publish" /> May also publish (otherwise drafts only)</label></div>
+        </div>
+        <button class="btn primary" type="submit">Create account</button>
+      </form>
+    </div>
+  )}
+
+  <div class="panel">
+    <h2>Your password</h2>
+    <form method="post" style="max-width: 420px;">
+      <input type="hidden" name="action" value="password" />
+      <div class="field"><label for="pw-cur">Current password</label><input id="pw-cur" name="current" type="password" required autocomplete="current-password" /></div>
+      <div class="field"><label for="pw-new">New password</label><input id="pw-new" name="next" type="password" minlength="10" required autocomplete="new-password" /></div>
+      <button class="btn primary" type="submit">Change password</button>
+    </form>
+  </div>
+
+  {user.role === 'owner' && (
+    <Fragment>
+      <div class="panel">
+        <h2>Backup</h2>
+        <p>
+          Download everything the website needs to be restored: all content, its history, settings
+          and the media registry, plus the uploaded media files listed separately.
+        </p>
+        <p style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <a class="btn primary" href="/studio/backup" download>Download content backup (JSON)</a>
+        </p>
+        <p class="help">
+          The complete data lives in the <code class="token">data/</code> folder next to the website
+          (database and uploaded media). Copying that folder is a full backup; putting it back and
+          restarting is the tested restore. Aim for a daily copy kept at least 30 days once the site
+          is hosted; the owner guide explains this in plain steps.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h2>Assistant connection</h2>
+        <p>The read-only token a future assistant integration uses. Treat it like a password.</p>
+        <details class="advanced">
+          <summary>Show the token</summary>
+          <p style="margin-top: 10px;"><code class="token">{token}</code></p>
+        </details>
+        <form method="post" style="margin-top: 10px;">
+          <input type="hidden" name="action" value="rotate-token" />
+          <button class="btn" type="submit" onclick="return confirm('Generate a new token? An existing integration stops working until it gets the new one.')">Generate a new token</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>Brand assets</h2>
+        <p>
+          The selected working identity (monogram, provisional palette and type) ships with the
+          website code. The final logo/palette decision, the wordmark spelling and licensed webfonts
+          are open owner decisions recorded in the build handoff; changing them is a small design
+          task rather than a Studio setting, so nothing here can corrupt the identity by accident.
+        </p>
+      </div>
+    </Fragment>
+  )}
+</Studio>

@@ -1,0 +1,140 @@
+---
+import Studio from '../../../layouts/Studio.astro';
+import { getMedia, mediaUrl, mediaUsages } from '../../../lib/content';
+import { db } from '../../../lib/db';
+import { MEDIA_DIR } from '../../../lib/db';
+import { readdir, unlink } from 'node:fs/promises';
+import { join } from 'node:path';
+
+const id = String(Astro.params.id);
+let m = getMedia(id);
+if (!m) return Astro.redirect('/studio/media');
+const usages = mediaUsages(id);
+
+let notice = Astro.url.searchParams.get('uploaded') ? 'Uploaded. Set the focal point and status below.' : '';
+let bad = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const action = String(form.get('action') ?? 'save');
+  if (action === 'save') {
+    db.prepare('UPDATE media SET alt = ?, caption = ?, credit = ?, status = ?, focal_x = ?, focal_y = ?, focal_xm = ?, focal_ym = ? WHERE id = ?').run(
+      String(form.get('alt') ?? m.alt),
+      String(form.get('caption') ?? ''),
+      String(form.get('credit') ?? ''),
+      String(form.get('status') ?? m.status),
+      Number(form.get('focal_x') ?? m.focal_x),
+      Number(form.get('focal_y') ?? m.focal_y),
+      Number(form.get('focal_xm') ?? m.focal_xm),
+      Number(form.get('focal_ym') ?? m.focal_ym),
+      id
+    );
+    m = getMedia(id)!;
+    notice = 'Saved. Pages using this photo pick the change up immediately.';
+  } else if (action === 'delete') {
+    if (usages.length) {
+      bad = `Still used on: ${usages.map((u) => u.title).join(', ')}. Replace it there first, so no page is left with a broken image.`;
+    } else if (m.kind === 'static') {
+      bad = 'This photo comes from the preserved archive selection and cannot be deleted here; mark it "not ready" to keep it off the site.';
+    } else {
+      for (const f of await readdir(MEDIA_DIR)) {
+        if (f.startsWith(`${id}-`) || f.startsWith(`original-${id}.`)) await unlink(join(MEDIA_DIR, f));
+      }
+      db.prepare('DELETE FROM media WHERE id = ?').run(id);
+      return Astro.redirect('/studio/media');
+    }
+  }
+}
+---
+
+<Studio title={id} active="media">
+  <div class="studio-head">
+    <div>
+      <h1>{id}</h1>
+      <p class="lede">{m.w} × {m.h}px · {m.kind === 'static' ? 'from the preserved archive' : 'uploaded'}</p>
+    </div>
+    <a class="btn" href="/studio/media">Back to the library</a>
+  </div>
+
+  {notice && <p class="notice ok">{notice}</p>}
+  {bad && <p class="notice bad">{bad}</p>}
+  {m.status === 'needs-permission' && (
+    <p class="notice warn">Client publication permission for this photo has not been confirmed by the owner yet. It can be used while building, and Studio will warn on every publish until the status is changed.</p>
+  )}
+
+  <div class="panel" style="display: grid; grid-template-columns: minmax(200px, 320px) 1fr; gap: 24px;">
+    <div>
+      <img src={mediaUrl(m, 800)} alt={m.alt} style="border-radius: 8px; border: 1px solid var(--border);" />
+      <p class="help" style="margin-top: 8px;">Original source: kept privately, never published.</p>
+    </div>
+    <form method="post">
+      <div class="field">
+        <label for="md-alt">What does the photo show? (alt text)</label>
+        <input id="md-alt" name="alt" type="text" value={m.alt} required />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="md-caption">Caption (optional)</label>
+          <input id="md-caption" name="caption" type="text" value={m.caption} />
+        </div>
+        <div class="field">
+          <label for="md-credit">Credit (optional)</label>
+          <input id="md-credit" name="credit" type="text" value={m.credit} />
+        </div>
+      </div>
+      <div class="field">
+        <label for="md-status">Publication status</label>
+        <select id="md-status" name="status">
+          <option value="ready" selected={m.status === 'ready'}>Ready for the website</option>
+          <option value="needs-permission" selected={m.status === 'needs-permission'}>Client permission still to confirm</option>
+          <option value="draft" selected={m.status === 'draft'}>Not ready (never publish)</option>
+        </select>
+      </div>
+      <h3>Focal point</h3>
+      <p class="help">Where the image should stay centred when it is cropped. 50/50 is the middle.</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="md-fx">Desktop: left–right (%)</label>
+          <input id="md-fx" name="focal_x" type="number" min="0" max="100" value={m.focal_x} />
+        </div>
+        <div class="field">
+          <label for="md-fy">Desktop: top–bottom (%)</label>
+          <input id="md-fy" name="focal_y" type="number" min="0" max="100" value={m.focal_y} />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="md-fxm">Phone: left–right (%)</label>
+          <input id="md-fxm" name="focal_xm" type="number" min="0" max="100" value={m.focal_xm} />
+        </div>
+        <div class="field">
+          <label for="md-fym">Phone: top–bottom (%)</label>
+          <input id="md-fym" name="focal_ym" type="number" min="0" max="100" value={m.focal_ym} />
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn primary" type="submit" name="action" value="save">Save</button>
+        <button class="btn danger" type="submit" name="action" value="delete" onclick="return confirm('Delete this photo and its web copies?')">Delete</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h2>Used on</h2>
+    {usages.length === 0 ? (
+      <p>Not used anywhere yet.</p>
+    ) : (
+      <table class="list">
+        <tbody>
+          {usages.map((u) => (
+            <tr>
+              <td>{u.title}</td>
+              <td>{u.where === 'published' ? <span class="badge published">on the live site</span> : <span class="badge draft">in a draft</span>}</td>
+              <td class="actions"><a class="btn small" href={`/studio/edit/${u.id}`}>Open</a></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+</Studio>

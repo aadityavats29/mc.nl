@@ -1,0 +1,53 @@
+---
+/** Individual stylist profile (used once several real stylists exist). */
+import Base from '../../../layouts/Base.astro';
+import PageHead from '../../../components/PageHead.astro';
+import MediaImg from '../../../components/MediaImg.astro';
+import { renderRichText } from '../../../lib/richtext';
+import { modeOf, stylistsPub } from '../../../lib/pub';
+
+const mode = modeOf(Astro);
+const s = stylistsPub(mode).find((x: any) => x.slug === Astro.params.slug);
+if (!s) Astro.response.status = 404;
+---
+
+{s ? (
+  <Base title={s.displayName || 'Hairstylist'} description={s.intro ?? ''}>
+    <PageHead
+      eyebrow="About"
+      title={s.displayName || 'Hairstylist'}
+      lede={s.intro}
+      crumbs={[
+        { label: 'Home', href: '/' },
+        { label: 'About the Hairstylist', href: '/about/hairstylists' },
+        { label: s.displayName || 'Profile' },
+      ]}
+    />
+    <div class="wrap section split" style="align-items: start;">
+      <div>
+        <div class="photo-frame" style="aspect-ratio: 4 / 5;">
+          <MediaImg mediaId={s.portrait} sizes="(max-width: 767px) 100vw, 45vw" loading="eager" />
+        </div>
+        <div class="note-box" style="margin-top: 20px;">
+          <h4>Specialties</h4>
+          <ul style="margin: 0; padding-left: 18px;">
+            {(s.specialties ?? []).map((sp: string) => <li>{sp}</li>)}
+          </ul>
+        </div>
+      </div>
+      <article class="prose">
+        <div set:html={renderRichText(s.story)} />
+        <p style="margin-top: 2em;">
+          <a class="btn btn-primary" href={s.bookingHref ?? '/book'}>Book an appointment</a>
+        </p>
+      </article>
+    </div>
+  </Base>
+) : (
+  <Base title="Not found" description="This profile does not exist.">
+    <div class="wrap section-lg" style="text-align:center; padding-block: 120px;">
+      <h1 style="font-size: var(--size-title);">This profile does not exist</h1>
+      <p><a class="btn btn-primary" href="/about/hairstylists">Back to About the Hairstylist</a></p>
+    </div>
+  </Base>
+)}

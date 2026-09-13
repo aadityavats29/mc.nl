@@ -1,15 +1,15 @@
 ---
-import type { ServiceGroup } from '../data/services';
 import { priceLabel } from '../data/services';
-import { globalPriceCondition } from '../data/site';
 
 interface Props {
-  group: ServiceGroup;
+  group: any; // shared service-group record content
   headingLevel?: 'h2' | 'h3';
+  conditionText?: string; // shared global price condition (settings:booking)
 }
-const { group, headingLevel = 'h3' } = Astro.props;
+const { group, headingLevel = 'h3', conditionText } = Astro.props;
 const H = headingLevel;
-const hasDurations = group.options.some((o) => o.duration);
+const hasDurations = group.options.some((o: any) => o.duration);
+const showCondition = (group.globalCondition ?? group.showGlobalCondition) && conditionText;
 ---
 
 <div class="price-block" id={group.id}>
@@ -27,7 +27,7 @@ const hasDurations = group.options.some((o) => o.duration);
     </thead>
     <tbody>
       {
-        group.options.map((o) => (
+        group.options.map((o: any) => (
           <tr>
             <td class="svc">{o.name}</td>
             <td class="copy copy-cell">{o.copy}</td>
@@ -39,10 +39,6 @@ const hasDurations = group.options.some((o) => o.duration);
     </tbody>
   </table>
 
-  {group.notes && group.notes.map((n) => <p class="note-box plain" style="margin-block: 1rem 0;">{n}</p>)}
-  {
-    group.showGlobalCondition && (
-      <p class="note-box" style="margin-block: 1.2rem 0;">{globalPriceCondition}</p>
-    )
-  }
+  {group.notes && group.notes.map((n: string) => <p class="note-box plain" style="margin-block: 1rem 0;">{n}</p>)}
+  {showCondition && <p class="note-box" style="margin-block: 1.2rem 0;">{conditionText}</p>}
 </div>

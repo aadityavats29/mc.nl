@@ -1,0 +1,46 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import MediaImg from '../../components/MediaImg.astro';
+import EnquiryForm from '../../components/EnquiryForm.astro';
+import { renderRichText } from '../../lib/richtext';
+import { modeOf, sitePub } from '../../lib/pub';
+import { getContent } from '../../lib/content';
+
+const mode = modeOf(Astro);
+const { slug } = Astro.params;
+const id = slug === 'corporate-salon' ? 'page:corporate-salon' : slug === 'care-homes' ? 'page:care-homes' : null;
+const page = id ? getContent<any>(id, mode) : null;
+if (!page) Astro.response.status = 404;
+const site = sitePub(mode);
+---
+
+{page ? (
+  <Base title={page.seo.title} description={page.seo.description} editId={id!}>
+    <PageHead
+      eyebrow={page.eyebrow}
+      title={page.heading}
+      lede={page.lede}
+      crumbs={[{ label: 'Home', href: '/' }, { label: 'For Businesses' }, { label: page.heading }]}
+    />
+    <div class="wrap section">
+      <div class="split" style="align-items: start;">
+        <article class="prose">
+          <div set:html={renderRichText(page.body)} />
+        </article>
+        <div class="photo-frame" style="aspect-ratio: 4 / 5;">
+          <MediaImg mediaId={page.media} sizes="(max-width: 767px) 100vw, 45vw" />
+        </div>
+      </div>
+      <hr style="margin-block: 48px;" />
+      <EnquiryForm site={site} requestType={page.enquiryType} heading={page.enquiryHeading} />
+    </div>
+  </Base>
+) : (
+  <Base title="Page not found" description="This page does not exist.">
+    <div class="wrap section-lg" style="text-align:center; padding-block: 120px;">
+      <h1 style="font-size: var(--size-title);">This page does not exist</h1>
+      <p><a class="btn btn-primary" href="/">Back to the homepage</a></p>
+    </div>
+  </Base>
+)}

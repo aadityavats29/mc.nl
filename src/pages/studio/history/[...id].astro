@@ -1,0 +1,55 @@
+---
+import Studio from '../../../layouts/Studio.astro';
+import { getRecord, listRevisions, restoreRevision } from '../../../lib/content';
+
+const id = String(Astro.params.id ?? '');
+const rec = getRecord(id);
+if (!rec) return Astro.redirect('/studio');
+const user = (Astro.locals as any).user;
+
+let notice = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const revId = Number(form.get('rev'));
+  if (revId) {
+    restoreRevision(id, revId, user.name);
+    return Astro.redirect(`/studio/edit/${id}?saved=1`);
+  }
+}
+
+const revisions = listRevisions(id);
+const ACTION_LABELS: Record<string, string> = {
+  create: 'Created', save: 'Draft saved', publish: 'Published', unpublish: 'Taken off the website', restore: 'Restored', delete: 'Deleted',
+};
+---
+
+<Studio title={`History · ${rec.title}`}>
+  <div class="studio-head">
+    <div>
+      <h1>History: {rec.title}</h1>
+      <p class="lede">Every saved and published version. Restoring puts a past version back into the draft; you then preview and publish it yourself.</p>
+    </div>
+    <a class="btn" href={`/studio/edit/${id}`}>Back to the editor</a>
+  </div>
+
+  <div class="panel">
+    <table class="list">
+      <thead><tr><th>When</th><th>What</th><th>Who</th><th></th></tr></thead>
+      <tbody>
+        {revisions.map((r) => (
+          <tr>
+            <td>{r.created_at.slice(0, 16).replace('T', ' ')}</td>
+            <td>{ACTION_LABELS[r.action] ?? r.action} (version {r.version})</td>
+            <td>{r.editor}</td>
+            <td class="actions">
+              <form method="post" style="display: inline;">
+                <input type="hidden" name="rev" value={r.rev_id} />
+                <button class="btn small" type="submit">Restore to draft</button>
+              </form>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Studio>

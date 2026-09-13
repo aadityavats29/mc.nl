@@ -1,0 +1,90 @@
+---
+import Studio from '../../../layouts/Studio.astro';
+import { listRecords, createRecord } from '../../../lib/content';
+import { statusBadge, publicPathOf, TYPE_LABELS } from '../../../lib/studio';
+import { randomUUID } from 'node:crypto';
+
+const type = String(Astro.params.type);
+const labels = TYPE_LABELS[type];
+if (!labels || type === 'settings') return Astro.redirect('/studio');
+const user = (Astro.locals as any).user;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('action') === 'create') {
+    const title = String(form.get('title') ?? 'Untitled').trim() || 'Untitled';
+    const slugBase = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || randomUUID().slice(0, 6);
+    let id = '';
+    if (type === 'page') {
+      id = `page:custom-${slugBase}`;
+      createRecord(id, 'page', title, {
+        slug: slugBase, template: 'standard', eyebrow: '', heading: title, lede: '',
+        seo: { title, description: '' },
+        sections: [{ id: randomUUID().slice(0, 8), type: 'richtext', visible: true, text: '' }],
+      }, user.name);
+    } else if (type === 'blogpost') {
+      id = `blogpost:${slugBase}`;
+      createRecord(id, 'blogpost', title, {
+        slug: slugBase, title, summary: '', body: '', author: '', category: '', publishedDate: new Date().toISOString().slice(0, 10), media: '',
+      }, user.name);
+    } else if (type === 'brand') {
+      id = `brand:${slugBase}`;
+      createRecord(id, 'brand', title, { name: title, order: listRecords('brand').length, visible: false, confirmed: false, url: '', note: '' }, user.name);
+    } else if (type === 'stylist') {
+      id = `stylist:${slugBase}`;
+      createRecord(id, 'stylist', title, {
+        slug: slugBase, displayName: title, role: '', portrait: '', intro: '', story: '', specialties: [], active: false, order: listRecords('stylist').length, bookingHref: '/book',
+      }, user.name);
+    }
+    if (id) return Astro.redirect(`/studio/edit/${id}`);
+  }
+}
+
+const records = listRecords(type).sort((a, b) => ((a.draft as any).order ?? 99) - ((b.draft as any).order ?? 99));
+const canCreate = ['page', 'blogpost', 'brand', 'stylist'].includes(type);
+const createLabel =
+  type === 'page' ? 'New page' : type === 'blogpost' ? 'New article' : type === 'brand' ? 'Add a brand' : 'Add a hairstylist';
+const activeId =
+  type === 'page' ? 'pages' : type === 'treatment' ? 'treatments' : type === 'service-group' ? 'catalogue' : type === 'stylist' ? 'stylists' : type === 'brand' ? 'brands' : 'blog';
+---
+
+<Studio title={labels.many} active={activeId}>
+  <div class="studio-head">
+    <div>
+      <h1>{labels.many}</h1>
+      {type === 'brand' && <p class="lede">Only brands marked confirmed and visible appear on the website and in assistant content. Real logo artwork is still awaited; names are shown until then.</p>}
+      {type === 'service-group' && <p class="lede">Shared prices: editing a price here updates the treatment pages, the catalogue, homepage previews, the booking selector and assistant content together.</p>}
+      {type === 'stylist' && <p class="lede">Only real, active profiles are published. With one profile the page shows it in full; more profiles become a portrait list automatically.</p>}
+    </div>
+    {canCreate && (
+      <form method="post" style="display: flex; gap: 8px;">
+        <input type="hidden" name="action" value="create" />
+        <input name="title" type="text" placeholder={type === 'brand' ? 'Brand name' : 'Title'} required style="padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font: inherit;" />
+        <button class="btn primary" type="submit">{createLabel}</button>
+      </form>
+    )}
+  </div>
+
+  <div class="panel">
+    <table class="list">
+      <thead><tr><th>Name</th><th>Status</th><th>Last edited</th><th></th></tr></thead>
+      <tbody>
+        {records.map((r) => {
+          const b = statusBadge(r);
+          const path = publicPathOf(r);
+          return (
+            <tr>
+              <td>{r.title}</td>
+              <td><span class={`badge ${b.cls}`}>{b.label}</span></td>
+              <td>{r.updated_at.slice(0, 16).replace('T', ' ')}</td>
+              <td class="actions">
+                {path && <a class="btn small" href={`${path}?preview=draft`} target="_blank" rel="noopener">Preview</a>}
+                <a class="btn small" href={`/studio/edit/${r.id}`}>Open</a>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+</Studio>

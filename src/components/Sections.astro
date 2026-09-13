@@ -1,0 +1,73 @@
+---
+/**
+ * Renders a page's ordered content sections (the shared section library used
+ * by Studio: rich text, quote, image, image and text, FAQ, call to action).
+ * Hidden sections are skipped. Essential copy stays in ordinary readable HTML.
+ */
+import { renderRichText } from '../lib/richtext';
+import MediaImg from './MediaImg.astro';
+
+interface Props {
+  sections: any[];
+}
+const { sections = [] } = Astro.props;
+const visible = sections.filter((s) => s.visible !== false);
+const arrow =
+  '<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+---
+
+{visible.map((s) => {
+  if (s.type === 'richtext') return <div set:html={renderRichText(s.text)} />;
+  if (s.type === 'quote')
+    return (
+      <blockquote style="margin: 2rem 0; padding-left: 20px; border-left: 3px solid var(--blush);">
+        <p class="intro-tagline" style="margin: 0;">{s.text}</p>
+      </blockquote>
+    );
+  if (s.type === 'image')
+    return (
+      <figure style="margin: 2rem 0;">
+        <span class="photo-frame" style="aspect-ratio: 4 / 3;">
+          <MediaImg mediaId={s.media} sizes="(max-width: 767px) 100vw, 62ch" />
+        </span>
+        {s.caption && <figcaption style="font-size: 0.8125rem; color: var(--muted); padding-top: 8px;">{s.caption}</figcaption>}
+      </figure>
+    );
+  if (s.type === 'image_text')
+    return (
+      <div class="split" style="margin: 2rem 0; align-items: center;">
+        <span class="photo-frame" style="aspect-ratio: 4 / 5;">
+          <MediaImg mediaId={s.media} sizes="(max-width: 767px) 100vw, 45vw" />
+        </span>
+        <div set:html={renderRichText(s.text)} />
+      </div>
+    );
+  if (s.type === 'faq')
+    return (
+      <div class="accordion" style="margin: 2rem 0;">
+        {(s.items ?? []).map((f: any) => (
+          <details>
+            <summary>
+              {f.q}
+              <svg class="chev" width="12" height="12" viewBox="0 0 10 10" aria-hidden="true" fill="none"><path d="M1.5 3.5 5 7l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </summary>
+            <div class="acc-body"><div class="acc-inner" set:html={renderRichText(f.a)} /></div>
+          </details>
+        ))}
+      </div>
+    );
+  if (s.type === 'cta')
+    return (
+      <p style="margin-top: 2em;">
+        {s.style === 'button' ? (
+          <a class="btn btn-primary" href={s.href}>{s.label}</a>
+        ) : (
+          <a class="arrow-link" href={s.href}>
+            {s.label}
+            <Fragment set:html={arrow} />
+          </a>
+        )}
+      </p>
+    );
+  return null;
+})}

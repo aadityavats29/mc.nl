@@ -1,7 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
 import PageHead from '../components/PageHead.astro';
-import { site, waLink } from '../data/site';
+import { modeOf, sitePub, brandsPub, waLinkFor } from '../lib/pub';
+import { getContent } from '../lib/content';
+
+const mode = modeOf(Astro);
+const page = getContent<any>('page:contact', mode);
+if (!page) Astro.response.status = 404;
+const site = sitePub(mode);
+const brands = brandsPub(mode);
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -19,68 +26,70 @@ const jsonLd = {
 };
 ---
 
-<Base
-  title="Contact"
-  description="Contact Maison Coiffure in IJburg, Amsterdam: WhatsApp for an appointment on +31 6 41347401. Open Wednesday, Friday and Saturday, by appointment only."
-  jsonLd={jsonLd}
->
-  <PageHead
-    eyebrow="Contact"
-    title="Say hello"
-    lede="The quickest way to reach Maison Coiffure is a WhatsApp message; you will get a personal reply."
-    crumbs={[{ label: 'Home', href: '/' }, { label: 'Contact' }]}
-  />
+{page && (
+  <Base title={page.seo.title} description={page.seo.description} jsonLd={jsonLd} editId="page:contact">
+    <PageHead
+      eyebrow={page.eyebrow}
+      title={page.heading}
+      lede={page.lede}
+      crumbs={[{ label: 'Home', href: '/' }, { label: 'Contact' }]}
+    />
 
-  <div class="wrap section">
-    <div class="split" style="align-items: start;">
-      <div>
-        <h2>Contact</h2>
-        <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 14px;">
-          <li>
-            <strong>WhatsApp</strong><br />
-            <a href={waLink('Hello Maison Coiffure, I would like to make an appointment.')} rel="noopener">
-              {site.phoneDisplay}
+    <div class="wrap section">
+      <div class="split" style="align-items: start;">
+        <div>
+          <h2>Contact</h2>
+          <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 14px;">
+            <li>
+              <strong>WhatsApp</strong><br />
+              <a href={waLinkFor(site, 'Hello Maison Coiffure, I would like to make an appointment.')} rel="noopener">
+                {site.phoneDisplay}
+              </a>
+            </li>
+            <li>
+              <strong>Telephone</strong><br />
+              <a href={`tel:${site.phoneIntl}`}>{site.phoneDisplay}</a>
+            </li>
+            <li>
+              <strong>Email</strong><br />
+              <a href={`mailto:${site.email}`}>{site.email}</a>
+            </li>
+            <li>
+              <strong>Instagram</strong><br />
+              <a href={site.instagram} rel="noopener">@maisoncoiffure.nl</a>
+            </li>
+          </ul>
+          <p style="margin-top: 26px;">
+            <a class="btn btn-primary" href={waLinkFor(site, 'Hello Maison Coiffure, I would like to make an appointment.')} rel="noopener">
+              WhatsApp for an appointment
             </a>
-          </li>
-          <li>
-            <strong>Telephone</strong><br />
-            <a href={`tel:${site.phoneIntl}`}>{site.phoneDisplay}</a>
-          </li>
-          <li>
-            <strong>Email</strong><br />
-            <a href={`mailto:${site.email}`}>{site.email}</a>
-          </li>
-          <li>
-            <strong>Instagram</strong><br />
-            <a href={site.instagram} rel="noopener">@maisoncoiffure.nl</a>
-          </li>
-        </ul>
-        <p style="margin-top: 26px;">
-          <a class="btn btn-primary" href={waLink('Hello Maison Coiffure, I would like to make an appointment.')} rel="noopener">
-            WhatsApp for an appointment
-          </a>
-        </p>
-      </div>
+          </p>
+        </div>
 
-      <div>
-        <h2>Visit</h2>
-        <address style="font-style: normal;">
-          <strong>{site.name}</strong><br />
-          {site.addressLine}
-        </address>
-        <p style="margin-top: 16px;">
-          Open {site.availability.toLowerCase()}. {site.walkIns}
-        </p>
-        <h3 style="margin-top: 34px;">On location</h3>
-        <p>
-          Maison Coiffure also works on location in {site.onLocationArea}: at homes for a
-          <a href="/treatments/salon-party">salon party</a>, at
-          <a href="/for-businesses/corporate-salon">workplaces</a> and at
-          <a href="/for-businesses/care-homes">care homes</a>.
-        </p>
-        <h3 style="margin-top: 34px;">Products we work with</h3>
-        <p>I work with the following couture brands: {site.brands.join(', ')}.</p>
+        <div>
+          <h2>Visit</h2>
+          <address style="font-style: normal;">
+            <strong>{site.name}</strong><br />
+            {site.addressLine}
+          </address>
+          <p style="margin-top: 16px;">
+            Open {site.availability.toLowerCase()}. {site.walkIns}
+          </p>
+          <h3 style="margin-top: 34px;">On location</h3>
+          <p>
+            Maison Coiffure also works on location in {site.onLocationArea}: at homes for a
+            <a href="/treatments/salon-party">salon party</a>, at
+            <a href="/for-businesses/corporate-salon">workplaces</a> and at
+            <a href="/for-businesses/care-homes">care homes</a>.
+          </p>
+          {brands.length > 0 && (
+            <Fragment>
+              <h3 style="margin-top: 34px;">Products we work with</h3>
+              <p>{page.brandsLine} {brands.map((b: any) => b.name).join(', ')}.</p>
+            </Fragment>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-</Base>
+  </Base>
+)}

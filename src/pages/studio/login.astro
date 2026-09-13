@@ -1,0 +1,43 @@
+---
+import Studio from '../../layouts/Studio.astro';
+import { findUserByEmail, verifyPassword, startSession, userCount } from '../../lib/auth';
+
+if (userCount() === 0) return Astro.redirect('/studio/setup');
+
+let error = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const email = String(form.get('email') ?? '');
+  const password = String(form.get('password') ?? '');
+  const user = findUserByEmail(email);
+  if (user && verifyPassword(password, user.pass_hash)) {
+    startSession(Astro.cookies, user.id);
+    return Astro.redirect('/studio');
+  }
+  error = 'That email and password combination is not right.';
+}
+---
+
+<Studio title="Sign in">
+  <div class="studio-head">
+    <div>
+      <h1>Sign in to Studio</h1>
+      <p class="lede">The private control centre for the Maison Coiffure website.</p>
+    </div>
+  </div>
+  {error && <p class="notice bad">{error}</p>}
+  <div class="panel" style="max-width: 420px;">
+    <form method="post">
+      <div class="field">
+        <label for="li-email">Email address</label>
+        <input id="li-email" name="email" type="email" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <label for="li-pass">Password</label>
+        <input id="li-pass" name="password" type="password" required autocomplete="current-password" />
+      </div>
+      <button class="btn primary" type="submit">Sign in</button>
+      <p class="help" style="margin-top: 12px;">Forgotten your password? Another owner can reset it under Settings → Access; otherwise see the recovery note in the owner guide.</p>
+    </form>
+  </div>
+</Studio>

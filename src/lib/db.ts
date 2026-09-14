@@ -6,13 +6,32 @@
  * (the data model ports directly to Postgres or a hosted CMS). The database
  * lives in data/mc.db next to the project; uploaded media lives in
  * data/media/. Both are covered by the backup export in Studio → Settings.
+ *
+ * TEMPORARY VERCEL STAGING SHORTCUT (preview-only): a Vercel Preview
+ * deployment has no writable/persistent app directory, so on Preview the
+ * data lives in /tmp/maison-coiffure instead. /tmp is EPHEMERAL there:
+ * Studio edits, logins, uploads and redirects made on staging can vanish on
+ * any cold start or redeploy, and the empty database re-seeds itself with
+ * the default Maison Coiffure content (via the existing ensureSeeded call in
+ * the middleware). This is for temporary review only; it deliberately does
+ * NOT activate on Vercel Production, so promoting the branch cannot silently
+ * put production data in /tmp. Local development keeps using data/.
  */
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const DATA_DIR = join(process.cwd(), 'data');
+const isVercelPreview =
+  process.env.VERCEL === '1' &&
+  process.env.VERCEL_ENV !== 'production';
+
+export const DATA_DIR = isVercelPreview
+  ? join('/tmp', 'maison-coiffure')
+  : join(process.cwd(), 'data');
+
 export const MEDIA_DIR = join(DATA_DIR, 'media');
+
+mkdirSync(DATA_DIR, { recursive: true });
 mkdirSync(MEDIA_DIR, { recursive: true });
 
 export const db = new DatabaseSync(join(DATA_DIR, 'mc.db'));

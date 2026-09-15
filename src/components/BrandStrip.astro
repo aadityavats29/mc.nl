@@ -1,0 +1,40 @@
+---
+/**
+ * Brand marquee: only owner-confirmed brands appear (the confirmed flag lives
+ * on each brand record in Studio). No usable logo artwork has been supplied,
+ * so the confirmed names render as quiet typographic marks until real logo
+ * files with usage permission arrive. Loop duplicates are decorative; each
+ * brand is exposed once to assistive technology.
+ */
+interface Props {
+  data: { heading: string; autoMove: boolean; speed?: string };
+  brands: { name: string; url?: string }[];
+}
+const { data, brands } = Astro.props;
+const speed = data.speed === 'slow' ? 24 : 35;
+---
+
+{brands.length > 0 && (
+  <section class="brand-strip section" aria-labelledby="brands-h">
+    <div class="wrap" style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px;">
+      <h2 id="brands-h" class="brand-strip-h">{data.heading}</h2>
+      <div class="mq-controls">
+        <button type="button" class="mq-btn mq-toggle" aria-pressed="false" hidden>
+          <span class="mq-pause-label">Pause</span><span class="mq-play-label">Play</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="marquee brand-marquee" data-marquee data-speed={speed} data-auto={data.autoMove ? '1' : '0'} data-loop-touch>
+      <div class="mq-viewport">
+        <div class="mq-track">
+          <ul class="mq-set brand-set">
+            {brands.map((b) => (
+              <li class="brand-mark">{b.url ? <a href={b.url} rel="noopener">{b.name}</a> : b.name}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+)}

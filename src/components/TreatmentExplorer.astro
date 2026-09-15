@@ -1,12 +1,22 @@
 ---
-import { explorerRows } from '../data/explorer';
-
+/**
+ * The treatment explorer: label, always-readable summary and link per row,
+ * with the retained description-on-hover preview (see motion.js). Rows come
+ * from the shared treatment records, so Studio edits update this everywhere.
+ */
+interface Row {
+  menuLabel: string;
+  slug: string;
+  summary: string;
+  preview: string;
+}
 interface Props {
+  rows: Row[];
   idPrefix?: string;
 }
-const { idPrefix = 'ex' } = Astro.props;
-const half = Math.ceil(explorerRows.length / 2);
-const columns = [explorerRows.slice(0, half), explorerRows.slice(half)];
+const { rows, idPrefix = 'ex' } = Astro.props;
+const half = Math.ceil(rows.length / 2);
+const columns = [rows.slice(0, half), rows.slice(half)];
 const arrow =
   '<svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 ---
@@ -21,12 +31,12 @@ const arrow =
             <li>
               <a
                 class="explorer-link"
-                href={row.href}
+                href={`/treatments/${row.slug}`}
                 data-preview={row.preview}
-                data-preview-title={row.label}
+                data-preview-title={row.menuLabel}
                 aria-describedby={descId}
               >
-                <span class="explorer-name">{row.label}</span>
+                <span class="explorer-name">{row.menuLabel}</span>
                 <Fragment set:html={arrow} />
                 <span class="explorer-sum">{row.summary}</span>
               </a>

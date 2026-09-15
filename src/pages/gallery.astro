@@ -1,40 +1,38 @@
 ---
+/* Real Maison Coiffure work from the shared media registry. No before/after
+   pairings are claimed: pairing and permissions await owner confirmation. */
 import Base from '../layouts/Base.astro';
 import PageHead from '../components/PageHead.astro';
-import Picture from '../components/Picture.astro';
-import { galleryImages } from '../data/images';
-import { site } from '../data/site';
+import MediaImg from '../components/MediaImg.astro';
+import { renderRichText } from '../lib/richtext';
+import { modeOf } from '../lib/pub';
+import { getContent } from '../lib/content';
 
-/* Real Maison Coiffure work. No before/after pairings are claimed: the owner
-   has not yet labelled pairs or confirmed publication permissions, so images
-   are presented individually. See _handoff/HANDOFF.md. */
+const mode = modeOf(Astro);
+const page = getContent<any>('page:gallery', mode);
+if (!page) Astro.response.status = 404;
 ---
 
-<Base
-  title="Gallery"
-  description="Recent work from Maison Coiffure: haircuts, curls, colour and grey-hair transitions, photographed in and around the salon."
->
-  <PageHead
-    eyebrow="Gallery"
-    title="Recent work"
-    lede="Real hair, real clients, no filters: haircuts, curls, colour and grey-hair care from the Maison Coiffure chair."
-    crumbs={[{ label: 'Home', href: '/' }, { label: 'Gallery' }]}
-  />
+{page && (
+  <Base title={page.seo.title} description={page.seo.description} editId="page:gallery">
+    <PageHead
+      eyebrow={page.eyebrow}
+      title={page.heading}
+      lede={page.lede}
+      crumbs={[{ label: 'Home', href: '/' }, { label: 'Gallery' }]}
+    />
 
-  <div class="wrap section">
-    <div class="gallery-grid">
-      {galleryImages.map((img) => (
-        <figure>
-          <span class="photo-frame">
-            <Picture image={img} sizes="(max-width: 479px) 100vw, (max-width: 899px) 50vw, 33vw" />
-          </span>
-        </figure>
-      ))}
+    <div class="wrap section">
+      <div class="gallery-grid">
+        {(page.media ?? []).map((id: string) => (
+          <figure>
+            <span class="photo-frame">
+              <MediaImg mediaId={id} sizes="(max-width: 479px) 100vw, (max-width: 899px) 50vw, 33vw" />
+            </span>
+          </figure>
+        ))}
+      </div>
+      {page.note && <div class="note-box" style="margin-top: 40px; max-width: 62ch;" set:html={renderRichText(page.note)} />}
     </div>
-    <p class="note-box" style="margin-top: 40px; max-width: 62ch;">
-      More of the day-to-day lives on
-      <a href={site.instagram} rel="noopener">Instagram</a>. If your hair appears here and you would
-      like it taken down, <a href="/contact">let us know</a> and it will be.
-    </p>
-  </div>
-</Base>
+  </Base>
+)}

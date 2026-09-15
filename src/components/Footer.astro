@@ -1,6 +1,12 @@
 ---
-import { site, waLink } from '../data/site';
 import Monogram from './Monogram.astro';
+import { waLinkFor } from '../lib/pub';
+
+interface Props {
+  site: any;
+  navData: any;
+}
+const { site, navData } = Astro.props;
 const year = new Date().getFullYear();
 ---
 
@@ -11,7 +17,7 @@ const year = new Date().getFullYear();
         <Monogram label="" />
         <span class="brand-name">Maison Coiffure</span>
         <p style="margin-top: 12px; font-size: 0.9375rem; color: var(--muted); max-width: 30ch;">
-          A small, personal hair salon in {site.areaNote}, and on location.
+          {navData?.footerAbout ?? ''}
         </p>
       </div>
 
@@ -27,7 +33,7 @@ const year = new Date().getFullYear();
       <div>
         <h4>Contact</h4>
         <ul>
-          <li><a href={waLink('Hello Maison Coiffure, I would like to make an appointment.')} rel="noopener">WhatsApp for an appointment</a></li>
+          <li><a href={waLinkFor(site, 'Hello Maison Coiffure, I would like to make an appointment.')} rel="noopener">WhatsApp for an appointment</a></li>
           <li><a href={`tel:${site.phoneIntl}`}>{site.phoneDisplay}</a></li>
           <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
           <li><a href={site.instagram} rel="noopener">Instagram</a></li>
@@ -48,8 +54,8 @@ const year = new Date().getFullYear();
     </div>
 
     <div class="footer-meta">
-      <span>© {year} Maison Coiffure, {site.locality}</span>
-      <span>By appointment only</span>
+      <span>© {year} {site.name}, {site.locality}</span>
+      <span>{navData?.footerNote ?? 'By appointment only'}</span>
     </div>
   </div>
 </footer>

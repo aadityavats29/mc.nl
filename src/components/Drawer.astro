@@ -1,7 +1,11 @@
 ---
-import { nav } from '../data/site';
 import Monogram from './Monogram.astro';
 
+interface Props {
+  navData: any;
+}
+const { navData } = Astro.props;
+const items = navData?.items ?? [];
 const chev =
   '<svg class="chev" width="12" height="12" viewBox="0 0 10 10" aria-hidden="true" fill="none"><path d="M1.5 3.5 5 7l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 ---
@@ -18,8 +22,8 @@ const chev =
     <nav class="drawer-nav" aria-label="Menu">
       <ul>
         {
-          nav.map((item, i) => {
-            if (item.children) {
+          items.map((item: any, i: number) => {
+            if (item.children?.length) {
               const subId = `drawer-sub-${i}`;
               return (
                 <li>
@@ -32,12 +36,12 @@ const chev =
                     aria-expanded="false"
                     aria-controls={subId}
                   >
-                    <span>{item.href ? `All ${item.label.toLowerCase()}` : item.label}</span>
+                    <span>{item.href ? `All ${String(item.label).toLowerCase()}` : item.label}</span>
                     <Fragment set:html={chev} />
                   </button>
                   <div class="drawer-sub" id={subId} style="height: 0px">
                     <ul>
-                      {item.children.map((c) => (
+                      {item.children.map((c: any) => (
                         <li>
                           <a href={c.href}>{c.label}</a>
                         </li>
@@ -63,17 +67,3 @@ const chev =
     </div>
   </div>
 </dialog>
-
-<noscript>
-  <style>
-    .menu-btn { display: none !important; }
-    @media (max-width: 1099px) {
-      .primary-nav { display: block !important; margin-left: auto; }
-      .primary-nav ul { flex-wrap: wrap; gap: 12px 18px; justify-content: flex-end; }
-      .primary-nav .dropdown { position: static; opacity: 1; visibility: visible; translate: none; box-shadow: none; border: 0; padding: 0; min-width: 0; }
-      .primary-nav .dropdown .dd-note { display: none; }
-      .primary-nav .disclosure-btn { display: none; }
-      .header-inner { flex-wrap: wrap; padding-block: 10px; }
-    }
-  </style>
-</noscript>

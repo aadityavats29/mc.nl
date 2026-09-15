@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://maisoncoiffure.nl/sitemap-index.xml

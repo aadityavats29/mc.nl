@@ -20,6 +20,17 @@ export interface McImage {
 const W = [480, 800, 1200, 1800];
 
 export const images = {
+  /** STAND-IN hero: purposeful landscape crop of the home-salon curls photo.
+   *  The Navy-led homepage brief requires a real landscape photograph of the
+   *  owner or the actual salon interior; no landscape original exists anywhere
+   *  in the archive (verified 14 Sep 2026), so this crop completes the layout
+   *  while that image is awaited. See _handoff/HANDOFF.md. */
+  heroWide: {
+    slug: 'hero-wide',
+    alt: 'Long, freshly shaped brown curls in the Maison Coiffure home salon.',
+    w: 2836, h: 1700, widths: [800, 1200, 1800, 2400],
+    source: 'Before-After Images/Maaike/IMG_8432.heic (landscape crop)',
+  },
   heroCurls: {
     slug: 'hero-curls',
     alt: 'Long, freshly shaped brown curls seen from behind in the Maison Coiffure home salon.',

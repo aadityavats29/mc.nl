@@ -1,0 +1,76 @@
+---
+import Studio from '../../layouts/Studio.astro';
+import { recentEdits, unpublishedChanges, lastEvent } from '../../lib/content';
+import { statusBadge, publicPathOf } from '../../lib/studio';
+
+const recent = recentEdits(8);
+const pending = unpublishedChanges();
+const ev = lastEvent();
+---
+
+<Studio title="Overview" active="overview">
+  <div class="studio-head">
+    <div>
+      <h1>Overview</h1>
+      <p class="lede">Pick up where you left off, see what is waiting to go live, and open the site.</p>
+    </div>
+    <a class="btn" href="/" target="_blank" rel="noopener">Open the live site ↗</a>
+  </div>
+
+  <div class="panel">
+    <h2>Waiting to go live</h2>
+    {pending.length === 0 ? (
+      <p class="notice ok" style="margin-bottom: 0;">Everything is published. The website matches your latest edits.</p>
+    ) : (
+      <table class="list">
+        <thead><tr><th>Content</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {pending.map((r) => {
+            const b = statusBadge(r);
+            return (
+              <tr>
+                <td>{r.title}</td>
+                <td><span class={`badge ${b.cls}`}>{b.label}</span></td>
+                <td class="actions"><a class="btn small" href={`/studio/edit/${r.id}`}>Open</a></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    )}
+  </div>
+
+  <div class="panel">
+    <h2>Recent edits</h2>
+    <table class="list">
+      <thead><tr><th>Content</th><th>Status</th><th>Last edited</th><th></th></tr></thead>
+      <tbody>
+        {recent.map((r) => {
+          const b = statusBadge(r);
+          const path = publicPathOf(r);
+          return (
+            <tr>
+              <td>{r.title}</td>
+              <td><span class={`badge ${b.cls}`}>{b.label}</span></td>
+              <td>{r.updated_at.slice(0, 16).replace('T', ' ')} · {r.updated_by}</td>
+              <td class="actions">
+                {path && <a class="btn small" href={path} target="_blank" rel="noopener">View</a>}
+                <a class="btn small" href={`/studio/edit/${r.id}`}>Open</a>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>Website status</h2>
+    <dl class="kv">
+      <dt>Last content change</dt>
+      <dd>{ev ? `${ev.at.slice(0, 16).replace('T', ' ')} (${ev.kind}: ${ev.record_id})` : 'No changes yet'}</dd>
+      <dt>Assistant content</dt>
+      <dd><a href="/studio/assistant">Ready; see what a future assistant can read</a></dd>
+    </dl>
+  </div>
+</Studio>

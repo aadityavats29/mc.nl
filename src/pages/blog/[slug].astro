@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import PageHead from '../../components/PageHead.astro';
+import MediaImg from '../../components/MediaImg.astro';
+import { renderRichText } from '../../lib/richtext';
+import { modeOf, blogPostsPub } from '../../lib/pub';
+
+const mode = modeOf(Astro);
+const post = blogPostsPub(mode).find((p: any) => p.slug === Astro.params.slug);
+if (!post) Astro.response.status = 404;
+---
+
+{post ? (
+  <Base title={post.title} description={post.summary ?? ''} editId={`blogpost:${post.slug}`}>
+    <PageHead
+      eyebrow={post.category || 'Blog'}
+      title={post.title}
+      lede={post.summary}
+      crumbs={[{ label: 'Home', href: '/' }, { label: 'Blog', href: '/blog' }, { label: post.title }]}
+    />
+    <div class="wrap section">
+      <article class="prose" style="margin-inline: auto;">
+        {post.media && (
+          <span class="photo-frame" style="aspect-ratio: 16 / 10; display: block; margin-bottom: 28px;">
+            <MediaImg mediaId={post.media} sizes="(max-width: 767px) 100vw, 62ch" loading="eager" />
+          </span>
+        )}
+        <div set:html={renderRichText(post.body)} />
+        <p style="margin-top: 2.4em; color: var(--muted); font-size: 0.9375rem;">
+          {post.author}{post.publishedDate ? ` · ${post.publishedDate}` : ''}
+        </p>
+      </article>
+    </div>
+  </Base>
+) : (
+  <Base title="Article not found" description="This article does not exist.">
+    <div class="wrap section-lg" style="text-align:center; padding-block: 120px;">
+      <h1 style="font-size: var(--size-title);">This article does not exist</h1>
+      <p><a class="btn btn-primary" href="/blog">Back to the blog</a></p>
+    </div>
+  </Base>
+)}

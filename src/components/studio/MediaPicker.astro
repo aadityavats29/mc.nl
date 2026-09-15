@@ -1,0 +1,41 @@
+---
+/** Choose a photo from the managed media library, with a small preview. */
+import { listMedia, getMedia, mediaUrl } from '../../lib/content';
+
+interface Props {
+  path: string;
+  label: string;
+  value: string | null | undefined;
+  help?: string;
+  allowNone?: boolean;
+  problem?: string;
+}
+const { path, label, value, help, allowNone = true, problem } = Astro.props;
+const id = `fld-${path.replace(/[^a-z0-9]+/gi, '-')}`;
+const all = listMedia();
+const current = value ? getMedia(value) : null;
+---
+
+<div class="field">
+  <label for={id}>{label}</label>
+  {problem && <p class="notice bad" style="padding: 6px 10px; margin-bottom: 6px;">{problem}</p>}
+  <div style="display: flex; gap: 14px; align-items: flex-start;">
+    {current && (
+      <img src={mediaUrl(current, 480)} alt="" width="72" height="72" style="width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); flex: none;" />
+    )}
+    <div style="flex: 1;">
+      <select id={id} name={`f:${path}`}>
+        {allowNone && <option value="" selected={!value}>No photo</option>}
+        {all.map((m) => (
+          <option value={m.id} selected={m.id === value}>
+            {m.id}{m.status === 'needs-permission' ? ' (permission to confirm)' : ''} — {m.alt.slice(0, 60)}
+          </option>
+        ))}
+      </select>
+      <p class="help">
+        {help ?? 'Save the draft to see the new photo in the preview.'} Manage photos, focal points and alt text in
+        <a href="/studio/media">Photos & videos</a>.
+      </p>
+    </div>
+  </div>
+</div>

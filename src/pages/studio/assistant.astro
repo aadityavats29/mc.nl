@@ -1,0 +1,105 @@
+---
+/**
+ * Assistant Content: what a future assistant can read. This is content ready
+ * for a future assistant; no chatbot is integrated yet and nothing here
+ * pretends one is. The list mirrors the published projection exactly.
+ */
+import Studio from '../../layouts/Studio.astro';
+import { listRecords, lastEvent, withdrawnRecordIds } from '../../lib/content';
+import { richTextToPlain } from '../../lib/richtext';
+import { getConfig } from '../../lib/db';
+
+const ev = lastEvent();
+const published = [
+  ...listRecords('page'),
+  ...listRecords('treatment'),
+  ...listRecords('stylist'),
+  ...listRecords('blogpost'),
+].filter((r) => r.published && ((r.type !== 'stylist') || (r.published as any).active));
+const withdrawn = withdrawnRecordIds();
+const token = getConfig('assistant_token');
+const inspect = Astro.url.searchParams.get('inspect');
+const inspected = inspect ? published.find((r) => r.id === inspect) : null;
+const missingDesc = published.filter((r) => {
+  const c: any = r.published;
+  return r.type === 'treatment' && !(c.summary ?? '').trim();
+});
+---
+
+<Studio title="Assistant content" active="assistant">
+  <div class="studio-head">
+    <div>
+      <h1>Assistant content</h1>
+      <p class="lede">
+        Content ready for a future assistant. Everything below is exactly what is published on the
+        website; the assistant never sees drafts, internal notes or enquiries. The chatbot itself
+        is a later integration, so nothing is answering questions yet.
+      </p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <dl class="kv">
+      <dt>Status</dt>
+      <dd><span class="badge published">Assistant content ready</span></dd>
+      <dt>Last content change</dt>
+      <dd>{ev ? ev.at.slice(0, 16).replace('T', ' ') : 'No changes yet'} (the assistant source refreshes with every publish)</dd>
+      <dt>Published items</dt>
+      <dd>{published.length}</dd>
+      <dt>Withdrawn items</dt>
+      <dd>{withdrawn.length} (withdrawn content disappears from the source immediately)</dd>
+    </dl>
+    {missingDesc.length > 0 && (
+      <p class="notice warn" style="margin-top: 12px;">
+        Missing descriptions: {missingDesc.map((r) => r.title).join(', ')}. Open the treatment and fill in its summary.
+      </p>
+    )}
+  </div>
+
+  <div class="panel">
+    <h2>What the assistant can read</h2>
+    <table class="list">
+      <thead><tr><th>Content</th><th>Kind</th><th>Published version</th><th></th></tr></thead>
+      <tbody>
+        {published.map((r) => (
+          <tr>
+            <td>{r.title}</td>
+            <td>{r.type}</td>
+            <td>v{r.published_version} · {r.updated_at.slice(0, 10)}</td>
+            <td class="actions">
+              <a class="btn small" href={`/studio/assistant?inspect=${r.id}`}>Inspect</a>
+              <a class="btn small" href={`/studio/edit/${r.id}`}>Correct</a>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {inspected && (
+    <div class="panel">
+      <h2>Readable text: {inspected.title}</h2>
+      <p class="help">This is the clean text an assistant receives for this item.</p>
+      <pre style="white-space: pre-wrap; font-family: inherit; background: var(--surface); padding: 16px; border-radius: 8px; max-height: 420px; overflow: auto;">{
+        (() => {
+          const c: any = inspected.published;
+          if (inspected.type === 'treatment') return `${c.title}\n${c.summary ?? ''}\n\n${richTextToPlain(c.body ?? '')}`;
+          if (inspected.type === 'stylist') return `${c.displayName || 'The Maison Coiffure hairstylist'}\n${c.role ?? ''}\n\n${richTextToPlain(c.story ?? '')}`;
+          if (c.sections) return c.sections.filter((s: any) => s.visible !== false).map((s: any) => richTextToPlain(s.text ?? '')).join('\n\n');
+          return richTextToPlain(c.body ?? c.intro?.body ?? c.lede ?? '');
+        })()
+      }</pre>
+    </div>
+  )}
+
+  <details class="advanced">
+    <summary>Technical connection (for the future integration)</summary>
+    <p style="margin-top: 10px;">
+      The integration reads <code class="token">GET /api/assistant/content/v1</code> with the header
+      <code class="token">Authorization: Bearer …token…</code>. The token lives in
+      <a href="/studio/settings">Settings</a> and stays server-side; it is never placed in website code.
+      The export contains only explicitly published content with stable IDs, canonical links, current
+      structured prices (fixed / from / personal quotation semantics preserved) and withdrawal records.
+    </p>
+  </details>
+</Studio>

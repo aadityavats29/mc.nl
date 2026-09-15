@@ -1,0 +1,70 @@
+---
+/**
+ * Animated About cards (Navy-led update): a continuously moving image-card
+ * track on desktop fine pointers, a manually swipeable snap row on touch, and
+ * a static grid under reduced motion. Content comes from the homepage record;
+ * one accessible set of real links is rendered here and motion.js duplicates
+ * the track visually only.
+ */
+import MediaImg from './MediaImg.astro';
+
+interface Props {
+  data: {
+    heading: string;
+    autoMove: boolean;
+    speed?: string;
+    cards: { media: string; label: string; title: string; summary: string; href: string; cta: string; visible: boolean }[];
+  };
+}
+const { data } = Astro.props;
+const cards = (data.cards ?? []).filter((c) => c.visible);
+const speed = data.speed === 'slow' ? 20 : 28;
+---
+
+<section class="section-lg about-cards-section" aria-labelledby="about-cards-h">
+  <div class="wrap" style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 30px;">
+    <div>
+      <span class="eyebrow">About us</span>
+      <h2 id="about-cards-h" style="margin-bottom: 0;">{data.heading}</h2>
+    </div>
+    <div class="mq-controls">
+      <button type="button" class="mq-btn mq-prev" aria-label="Previous card" hidden>
+        <svg width="16" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M17 6H2M6.5 1.5 1.5 6l5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="mq-btn mq-next" aria-label="Next card" hidden>
+        <svg width="16" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button type="button" class="mq-btn mq-toggle" aria-pressed="false" hidden>
+        <span class="mq-pause-label">Pause</span><span class="mq-play-label">Play</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="marquee about-marquee" data-marquee data-speed={speed} data-auto={data.autoMove ? '1' : '0'}>
+    <div class="mq-viewport">
+      <div class="mq-track">
+        <ul class="mq-set">
+          {cards.map((c) => (
+            <li class="about-card">
+              <a href={c.href}>
+                <span class="photo-frame about-card-media">
+                  <MediaImg mediaId={c.media} sizes="(max-width: 767px) 82vw, 370px" />
+                </span>
+                <span class="about-card-body">
+                  <span class="about-card-label">{c.label}</span>
+                  <span class="about-card-title">{c.title}</span>
+                  <span class="about-card-sum">{c.summary}</span>
+                  <span class="arrow-link about-card-cta">
+                    {c.cta}
+                    <svg class="arrow" width="18" height="12" viewBox="0 0 18 12" aria-hidden="true" fill="none"><path d="M1 6h15M11.5 1.5 16.5 6l-5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+    <div class="mq-dots" role="presentation" hidden></div>
+  </div>
+</section>

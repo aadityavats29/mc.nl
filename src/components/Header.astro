@@ -1,94 +1,30 @@
 ---
-import { nav } from '../data/site';
+/**
+ * Minimal header per the 14 September Navy-led update: small MC mark at the
+ * left, Menu at the right with a discreet booking action. Compact navigation
+ * is the default at every width; the complete MC sitemap lives in the drawer.
+ * On the homepage the header sits transparently over the hero and gains a
+ * solid MC surface after it (180ms transition, handled in motion.js).
+ */
 import Monogram from './Monogram.astro';
 
-const path = Astro.url.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
-function current(href?: string) {
-  if (!href) return false;
-  return href === '/' ? path === '/' : path === href || path.startsWith(href + '/');
+interface Props {
+  overHero?: boolean;
+  site: any;
+  navData: any;
 }
-const chev =
-  '<svg class="chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" fill="none"><path d="M1.5 3.5 5 7l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const { overHero = false, navData } = Astro.props;
+const items = navData?.items ?? [];
 ---
 
-<header class="site-header">
+<header class={`site-header${overHero ? ' over-hero' : ''}`}>
   <div class="header-inner">
     <a class="brand" href="/" aria-label="Maison Coiffure home">
       <Monogram label="" />
       <span class="brand-name">Maison Coiffure</span>
     </a>
 
-    <nav class="primary-nav" aria-label="Main">
-      <ul>
-        {
-          nav.map((item) => {
-            if (item.children && item.href) {
-              /* Treatments: direct catalogue link plus a labelled disclosure */
-              return (
-                <li class="nav-group">
-                  <a href={item.href} class="line-link" aria-current={current(item.href) ? 'page' : undefined}>
-                    {item.label}
-                  </a>
-                  <button
-                    type="button"
-                    class="disclosure-btn"
-                    aria-expanded="false"
-                    aria-label={`Open ${item.label} menu`}
-                    set:html={chev}
-                  />
-                  <div class="dropdown">
-                    <ul>
-                      {item.children.map((c) => (
-                        <li>
-                          <a href={c.href} aria-current={current(c.href) ? 'page' : undefined}>
-                            {c.label}
-                            {c.note && <span class="dd-note">{c.note}</span>}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </li>
-              );
-            }
-            if (item.children) {
-              return (
-                <li class="nav-group">
-                  <button type="button" aria-expanded="false">
-                    {item.label} <Fragment set:html={chev} />
-                  </button>
-                  <div class="dropdown">
-                    <ul>
-                      {item.children.map((c) => (
-                        <li>
-                          <a href={c.href} aria-current={current(c.href) ? 'page' : undefined}>
-                            {c.label}
-                            {c.note && <span class="dd-note">{c.note}</span>}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </li>
-              );
-            }
-            return (
-              <li>
-                <a href={item.href} class="line-link" aria-current={current(item.href) ? 'page' : undefined}>
-                  {item.label}
-                </a>
-              </li>
-            );
-          })
-        }
-      </ul>
-    </nav>
-
-    <div class="header-book">
-      <a class="btn btn-primary" href="/book">Book an appointment</a>
-    </div>
-
-    <a class="btn btn-primary compact-book" href="/book">Book</a>
+    <a class="btn compact-book" href="/book">Book</a>
     <button type="button" class="menu-btn" id="menu-open" aria-haspopup="dialog" aria-controls="menu-drawer">
       Menu
       <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true" fill="none">
@@ -97,3 +33,29 @@ const chev =
     </button>
   </div>
 </header>
+
+<noscript>
+  <nav class="nojs-nav" aria-label="Main">
+    <div class="wrap">
+      <ul>
+        {
+          items.map((item: any) => (
+            <Fragment>
+              {item.href && (
+                <li>
+                  <a href={item.href}>{item.label}</a>
+                </li>
+              )}
+              {item.children?.map((c: any) => (
+                <li>
+                  <a href={c.href}>{c.label}</a>
+                </li>
+              ))}
+            </Fragment>
+          ))
+        }
+        <li><a href="/book"><strong>Book an appointment</strong></a></li>
+      </ul>
+    </div>
+  </nav>
+</noscript>

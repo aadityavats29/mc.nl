@@ -1,0 +1,51 @@
+---
+/**
+ * Pages created in Studio (standard template) are served here by their slug.
+ * Anything else is a genuine 404.
+ */
+import Base from '../layouts/Base.astro';
+import PageHead from '../components/PageHead.astro';
+import Sections from '../components/Sections.astro';
+import Monogram from '../components/Monogram.astro';
+import { modeOf } from '../lib/pub';
+import { listRecords } from '../lib/content';
+
+const mode = modeOf(Astro);
+const slug = (Astro.params.slug ?? '').replace(/\/+$/, '');
+const rec = listRecords('page').find((r) => {
+  const c: any = mode === 'draft' ? r.draft : r.published;
+  return c && c.template === 'standard' && c.slug === slug && !['page:philosophy'].includes(r.id);
+});
+const page: any = rec ? (mode === 'draft' ? rec.draft : rec.published) : null;
+if (!page) Astro.response.status = 404;
+---
+
+{page ? (
+  <Base title={page.seo?.title ?? page.heading} description={page.seo?.description ?? ''} editId={rec!.id}>
+    <PageHead
+      eyebrow={page.eyebrow}
+      title={page.heading}
+      lede={page.lede}
+      crumbs={[{ label: 'Home', href: '/' }, { label: page.heading }]}
+    />
+    <div class="wrap section">
+      <article class="prose" style="margin-inline: auto;">
+        <Sections sections={page.sections ?? []} />
+      </article>
+    </div>
+  </Base>
+) : (
+  <Base title="Page not found" description="This page does not exist. Find your way back to Maison Coiffure.">
+    <div class="wrap section-lg" style="text-align: center; padding-block: 120px;">
+      <span style="display: inline-block; width: 72px; color: var(--primary);"><Monogram label="" /></span>
+      <h1 style="font-size: var(--size-title); margin-top: 24px;">This page does not exist</h1>
+      <p class="lede" style="margin-inline: auto;">
+        Sometimes you need a different perspective; this address is not one of ours.
+      </p>
+      <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 28px;">
+        <a class="btn btn-primary" href="/">Back to the homepage</a>
+        <a class="btn btn-quiet" href="/treatments">Explore treatments</a>
+      </div>
+    </div>
+  </Base>
+)}

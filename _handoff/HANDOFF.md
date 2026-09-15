@@ -129,3 +129,95 @@ The Studio portal & AI-ready brief (drafts/publish, owner editing, assistant con
 separate implementation phase. This build prepares for it: shared structured content, stable
 canonical routes, server-rendered HTML, sitemap, truthful HairSalon structured data, and no
 content that exists only behind hover or script. The chatbot remains a later integration.
+
+---
+
+# Update 2 — 14 September briefs (Navy-led homepage, image folder, Studio & AI-ready)
+
+## Navy-led homepage (implemented)
+
+The homepage now follows the owner's newer Navy-led direction, with MC's own identity and material:
+
+1. **Logo landing over a landscape hero** — intact concept-3 monogram, one 1000ms downward
+   entrance (once per session; instant on back navigation and reduced motion), discreet Book
+   action, no splash screen. Header is now minimal (mark + Book + Menu) at every width; the full
+   MC sitemap lives in the drawer, and a no-JS fallback nav lists every page.
+2. **Spacious centred introduction** — the approved MC quote is the introduction heading (the
+   Goldust-style word-by-word sequence is removed per the update); faint MC monogram watermark at
+   5% opacity; heading 650ms / copy 550ms+100ms reveals at the lower-80% trigger.
+3. **Animated About cards** — continuous 28px/s track (About us): MC Philosophy, About the
+   Hairstylist, Visit Maison Coiffure. Pause/Play, hover/focus pause, offscreen/hidden-tab pause,
+   aria-hidden clones outside the tab order; manual snap row with prev/next and dots on touch;
+   static grid under reduced motion.
+4. **Brand marquee** — 35px/s, only the owner-confirmed list (Kérastase, Balmain, L'Oréal,
+   Milkshake, Lush, Moroccanoil, O-Way). **No logo artwork was supplied for any brand**, so the
+   confirmed names render as quiet typographic marks; real marks with usage permission are an
+   awaited asset, and the section is fully manageable (confirm/visibility/order) in Studio.
+5. **Treatment explorer with the retained hover previews** — unchanged interaction, restyled
+   surfaces.
+6–8. Salon Party, Recent work and the practical block retained; the previous full stylist split
+   was dropped from the homepage because the About cards provide that entrance (the full
+   Philosophy and Hairstylist pages are untouched).
+
+**Hero image: open item.** The update requires a real landscape photograph of the owner or the
+actual salon. The additional image folder and the whole archive contain **no landscape original at
+all** (verified: every image is portrait after EXIF rotation). The layout is complete and uses a
+purposeful landscape crop of the home-salon curls photo (Maaike/IMG_8432) as a clearly flagged
+stand-in; the owner needs to supply the real landscape hero (or approve this crop).
+
+## Additional image folder review (14 Sep brief)
+
+`/Users/adityavats/Library/Mobile Documents/com~apple~CloudDocs/MC Website` was inventoried
+recursively (theme folders excluded) and every file hashed against the preserved archive manifest:
+**all 130 image files and all other files are byte-identical duplicates of already-preserved
+archive files. There is nothing new.** Locations reviewed: all the table's search locations,
+including `01. Home` (only the known unpurchased iStock previews), `Philosophy MC` (the known
+portrait and mirror selfie) and `Before-After Images` (the 42 known photos). Consequently no image
+was added or replaced; the placement record from the first build stands unchanged, and the open
+questions remain: landscape hero, client publication permissions, verified before/after pairs.
+
+## Maison Coiffure Studio + AI-ready foundation (implemented)
+
+The site now runs as a served app (Astro SSR + SQLite in `data/mc.db`) with the private `/studio`
+control centre. Delivered against the Studio brief:
+
+- Real sign-in (first-run owner setup, scrypt-hashed passwords, server-side sessions), Owner /
+  Editor roles with an optional publish permission, server-side authorisation on every Studio and
+  API route, noindex/no-store on all of it. CSRF origin checks on all form posts.
+- Shared structured records with plain-language editors for every public content item: home
+  sections, standard-page section library (text / photo / photo+text / quote / FAQ / CTA, with
+  add, duplicate, move up/down, hide, restore, remove), treatments, shared price groups with
+  fixed/from/quote/consultation semantics enforced ("unknown never becomes €0"), stylist profiles
+  (future collaborators supported), brands with confirmed/visible gating, blog, gallery, menus &
+  footer, business details, booking wording.
+- Draft → real-renderer preview (authorised only) → validated publish with a confirmation step
+  showing affected pages and photo-permission warnings → revision history with restore-to-draft →
+  discard-changes → unpublish. Autosave while typing; concurrent edits conflict safely (newer
+  work preserved, nothing overwritten). URL renames create redirects automatically.
+- Media: uploads (sharp derivatives, originals preserved), alt/caption/credit, publication-status
+  flags, desktop/phone focal points, "Used on…" lists, deletion blocked while a photo is in use.
+- AI-ready: server-rendered readable HTML everywhere; dynamic `/sitemap.xml` from the current
+  publication state with real lastmod; truthful HairSalon JSON-LD; the authenticated read-only
+  export `GET /api/assistant/content/v1` (bearer token in Studio → Settings) containing only
+  explicitly published content with stable IDs, canonical URLs, clean text, structured prices and
+  withdrawal records; the Assistant Content screen labelled "content ready for a future
+  assistant" with per-record inspection. No chatbot is integrated or simulated.
+- Owner guide, JSON content backup download, and documented data-folder backup/restore.
+
+**Verified:** 44 automated Studio/AI checks (real saved data and public results: draft privacy,
+publish propagation of a shared price to every surface, consultation-gate validation, export auth
++ draft/note exclusion + withdrawal records, unpublish removing page/sitemap/export, conflict
+handling, section ops, slug-rename redirects, editor-role limits, history restore, media upload
+and path-traversal refusal) plus 39 public-site checks (responsive 320–1440, marquee behaviour on
+desktop/touch/reduced-motion, hover previews, drawer, no-JS, homepage order, booking gate).
+
+**Deliberate simplifications to flag** (within the brief's spirit, recorded honestly):
+- Rich text is a safe light syntax (paragraphs, headings, lists, bold, links) rather than a
+  WYSIWYG toolbar; everything is HTML-escaped and link schemes are restricted.
+- Reordering uses accessible Move up/down buttons (no drag-and-drop yet).
+- Live side-by-side preview is an embedded draft-preview frame refreshed on save, not keystroke-live.
+- The "Edit this page" shortcut opens the page's Studio editor (no click-to-section mapping yet).
+- SQLite is the vendor-neutral durable store pending a hosting decision; daily backups ≥30 days
+  are documented as an operator task, not yet an automated job (no infrastructure exists yet).
+- Password self-reset by email is not built (no mail service exists); recovery paths are in the
+  owner guide.

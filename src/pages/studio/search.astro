@@ -1,0 +1,45 @@
+---
+import Studio from '../../layouts/Studio.astro';
+import { searchDrafts } from '../../lib/content';
+import { statusBadge } from '../../lib/studio';
+
+const q = Astro.url.searchParams.get('q')?.trim() ?? '';
+const results = q ? searchDrafts(q) : [];
+---
+
+<Studio title="Search">
+  <div class="studio-head">
+    <div>
+      <h1>Search content</h1>
+      <p class="lede">Find a page by its name or by a phrase that appears in its text.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <form method="get" style="display: flex; gap: 10px;">
+      <input name="q" type="search" value={q} placeholder="e.g. Gracefully Grey, or a sentence from a page" style="flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; font: inherit;" />
+      <button class="btn primary" type="submit">Search</button>
+    </form>
+  </div>
+
+  {q && (
+    <div class="panel">
+      <h2>{results.length} result{results.length === 1 ? '' : 's'} for “{q}”</h2>
+      <table class="list">
+        <tbody>
+          {results.map((r) => {
+            const b = statusBadge(r);
+            return (
+              <tr>
+                <td>{r.title}</td>
+                <td>{r.type}</td>
+                <td><span class={`badge ${b.cls}`}>{b.label}</span></td>
+                <td class="actions"><a class="btn small" href={`/studio/edit/${r.id}`}>Open</a></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  )}
+</Studio>

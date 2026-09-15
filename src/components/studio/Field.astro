@@ -1,0 +1,52 @@
+---
+/** One labelled Studio form field bound to a draft path. */
+interface Props {
+  path: string;
+  label: string;
+  value: any;
+  widget?: 'text' | 'textarea' | 'rich' | 'number' | 'checkbox' | 'select' | 'lines' | 'date' | 'url';
+  help?: string;
+  options?: { value: string; label: string }[];
+  required?: boolean;
+  tall?: boolean;
+  problem?: string;
+}
+const { path, label, value, widget = 'text', help, options = [], required = false, tall = false, problem } = Astro.props;
+const id = `fld-${path.replace(/[^a-z0-9]+/gi, '-')}`;
+---
+
+<div class="field">
+  {widget !== 'checkbox' && <label for={id}>{label}</label>}
+  {problem && <p class="notice bad" style="padding: 6px 10px; margin-bottom: 6px;">{problem}</p>}
+
+  {widget === 'text' && <input id={id} type="text" name={`f:${path}`} value={value ?? ''} required={required} />}
+  {widget === 'url' && <input id={id} type="text" name={`f:${path}`} value={value ?? ''} required={required} placeholder="/page, https://…, mailto:… or tel:…" />}
+  {widget === 'date' && <input id={id} type="date" name={`f:${path}`} value={value ?? ''} required={required} />}
+  {widget === 'number' && <input id={id} type="number" step="0.5" name={`n:${path}`} value={value ?? ''} required={required} />}
+  {widget === 'textarea' && <textarea id={id} name={`f:${path}`} class={tall ? 'tall' : ''}>{value ?? ''}</textarea>}
+  {widget === 'rich' && (
+    <Fragment>
+      <textarea id={id} name={`f:${path}`} class={tall ? 'tall' : ''}>{value ?? ''}</textarea>
+      <p class="rt-hint">Blank line = new paragraph · ## Heading · - list item · **bold** · [link text](/page)</p>
+    </Fragment>
+  )}
+  {widget === 'lines' && (
+    <Fragment>
+      <textarea id={id} name={`l:${path}`}>{Array.isArray(value) ? value.join('\n') : (value ?? '')}</textarea>
+      <p class="rt-hint">One item per line.</p>
+    </Fragment>
+  )}
+  {widget === 'select' && (
+    <select id={id} name={`f:${path}`}>
+      {options.map((o) => <option value={o.value} selected={o.value === value}>{o.label}</option>)}
+    </select>
+  )}
+  {widget === 'checkbox' && (
+    <label class="check" for={id}>
+      <input id={id} type="checkbox" name={`b:${path}`} checked={Boolean(value)} />
+      <input type="hidden" name={`bm:${path}`} value="1" />
+      {label}
+    </label>
+  )}
+  {help && <p class="help">{help}</p>}
+</div>

@@ -1,0 +1,95 @@
+---
+import Studio from '../../../layouts/Studio.astro';
+import { listMedia, mediaUrl } from '../../../lib/content';
+import { db, now, MEDIA_DIR } from '../../../lib/db';
+import sharp from 'sharp';
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
+
+let notice = '';
+let bad = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const file = form.get('file');
+  const alt = String(form.get('alt') ?? '').trim();
+  if (!(file instanceof File) || file.size === 0) bad = 'Choose an image file to upload.';
+  else if (!alt) bad = 'Describe the photo (alt text) before uploading; it matters for accessibility and the assistant.';
+  else if (file.size > 40 * 1024 * 1024) bad = 'That file is larger than 40 MB.';
+  else {
+    try {
+      const buf = Buffer.from(await file.arrayBuffer());
+      const img = sharp(buf, { failOn: 'none' }).rotate();
+      const meta = await img.metadata();
+      if (!meta.width || !meta.height) throw new Error('Not a readable image');
+      const id =
+        (file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) ||
+          'photo') + '-' + randomBytes(3).toString('hex');
+      const widths = [480, 800, 1200, 1800].filter((w) => w <= meta.width!);
+      if (!widths.length) widths.push(meta.width!);
+      for (const w of widths) {
+        const out = await sharp(buf).rotate().resize({ width: w }).webp({ quality: 80 }).toBuffer();
+        await writeFile(join(MEDIA_DIR, `${id}-${w}.webp`), out);
+      }
+      // Preserve the untouched original next to the derivatives for later editing.
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+      await writeFile(join(MEDIA_DIR, `original-${id}.${ext}`), buf);
+      db.prepare(
+        `INSERT INTO media(id, kind, base, ext, widths, w, h, alt, caption, credit, status, focal_x, focal_y, focal_xm, focal_ym, origin, created_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+      ).run(id, 'upload', id, 'webp', JSON.stringify(widths), meta.width, meta.height, alt, '', '', 'ready', 50, 50, 50, 50, `upload:${file.name}`, now());
+      return Astro.redirect(`/studio/media/${id}?uploaded=1`);
+    } catch (e) {
+      bad = 'That file could not be processed as an image. HEIC from an iPhone works best exported as JPG first.';
+    }
+  }
+}
+
+const media = listMedia();
+---
+
+<Studio title="Photos & videos" active="media">
+  <div class="studio-head">
+    <div>
+      <h1>Photos &amp; videos</h1>
+      <p class="lede">Upload, organise and reuse media. Originals are kept unchanged; the website uses web-sized copies.</p>
+    </div>
+  </div>
+
+  {bad && <p class="notice bad">{bad}</p>}
+  {notice && <p class="notice ok">{notice}</p>}
+
+  <div class="panel">
+    <h2>Upload a photo</h2>
+    <form method="post" enctype="multipart/form-data">
+      <div class="field-row">
+        <div class="field">
+          <label for="up-file">Image file</label>
+          <input id="up-file" name="file" type="file" accept="image/*" required />
+          <p class="help">JPG, PNG or WebP. Recommended: the largest version you have; the site makes its own sizes.</p>
+        </div>
+        <div class="field">
+          <label for="up-alt">What does the photo show?</label>
+          <input id="up-alt" name="alt" type="text" required placeholder="e.g. Long copper hair after colouring, seen from behind" />
+          <p class="help">Describes the visible image accurately; no invented names or results.</p>
+        </div>
+      </div>
+      <button class="btn primary" type="submit">Upload</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h2>Library ({media.length})</h2>
+    <div class="media-grid">
+      {media.map((m) => (
+        <a href={`/studio/media/${m.id}`}>
+          <span class="thumb"><img src={mediaUrl(m, 480)} alt="" loading="lazy" /></span>
+          {m.id}
+          {m.status === 'needs-permission' && <span class="badge attention">permission to confirm</span>}
+          {m.status === 'draft' && <span class="badge draft">not ready</span>}
+        </a>
+      ))}
+    </div>
+  </div>
+</Studio>

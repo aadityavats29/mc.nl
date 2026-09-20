@@ -1,9 +1,9 @@
 /* ==========================================================================
    Maison Coiffure — global styles
-   Palette: PROVISIONAL. Colour roles follow the MC September booking
-   reference (ivory / pale blush / burgundy / dark brown), as permitted by
-   the design brief for a working prototype. Final logo/palette selection
-   is an open owner decision — see _handoff/HANDOFF.md.
+   Palette: Moodboard 2 · Terracotta (documented archive colours #D3C1BA,
+   #BAA195, #914827 plus derived working tones), selected from the palette
+   pack on 20 Sep 2026. Final identity sign-off (logo, wordmark spelling)
+   remains with the owner — see _handoff/HANDOFF.md.
    ========================================================================== */
 
 @import '@fontsource/playfair-display/400.css';
@@ -15,16 +15,16 @@
 
 :root {
   /* Colour roles (provisional MC set) */
-  --canvas: #fffdf9;
-  --surface: #f4e7e4;
-  --blush: #cda5a0;
-  --primary: #5b1718;
-  --primary-deep: #471112;
-  --ink: #3c302e;
-  --muted: #806966;
-  --border: #dfcbc6;
-  --accent: #dc4944;
-  --on-primary: #fffdf9;
+  --canvas: #fbf7f3;
+  --surface: #e9dcd4;
+  --blush: #baa195;
+  --primary: #914827;
+  --primary-deep: #7a3a1e;
+  --ink: #40332c;
+  --muted: #7e6c61;
+  --border: #dfcfc5;
+  --accent: #914827;
+  --on-primary: #fff8f2;
 
   /* Type. Provisional pairing: editorial serif + clean sans, matching the
      September booking reference direction. Brand fonts (Nomark, Lamora,
@@ -231,10 +231,10 @@ html.js .site-header.over-hero:not(.solid) { color: var(--on-primary); }
 html.js .site-header.over-hero:not(.solid) .brand,
 html.js .site-header.over-hero:not(.solid) .menu-btn { color: var(--on-primary); }
 html.js .site-header.over-hero:not(.solid) .brand svg { color: var(--on-primary); }
-html.js .site-header.over-hero:not(.solid) .menu-btn { border-color: rgb(255 253 249 / 0.55); }
+html.js .site-header.over-hero:not(.solid) .menu-btn { border-color: rgb(255 248 242 / 0.55); }
 html.js .site-header.over-hero:not(.solid) .compact-book {
-  background: rgb(255 253 249 / 0.14); color: var(--on-primary);
-  border-color: rgb(255 253 249 / 0.55); backdrop-filter: blur(4px);
+  background: rgb(255 248 242 / 0.14); color: var(--on-primary);
+  border-color: rgb(255 248 242 / 0.55); backdrop-filter: blur(4px);
 }
 html.js .site-header.over-hero.solid {
   background: var(--canvas); border-color: var(--border);
@@ -315,7 +315,7 @@ html.js .site-header.over-hero.solid {
   .drawer[open] { translate: 100% 0; }
 }
 .drawer::backdrop {
-  background: rgb(60 48 46 / 0.28);
+  background: rgb(64 51 44 / 0.28);
   opacity: 0;
   transition: opacity 220ms var(--ease-ui), display 220ms allow-discrete,
     overlay 220ms allow-discrete;
@@ -385,8 +385,8 @@ html.js .site-header.over-hero.solid {
   position: absolute; inset: 0;
   /* Restrained MC-coloured scrim for identity legibility only */
   background:
-    linear-gradient(rgb(60 48 46 / 0.34), rgb(60 48 46 / 0.08) 34%, transparent 55%),
-    radial-gradient(ellipse 62% 48% at 50% 46%, rgb(60 48 46 / 0.32), transparent 70%);
+    linear-gradient(rgb(64 51 44 / 0.34), rgb(64 51 44 / 0.08) 34%, transparent 55%),
+    radial-gradient(ellipse 62% 48% at 50% 46%, rgb(64 51 44 / 0.32), transparent 70%);
 }
 .hero-landing-content {
   position: absolute; inset: 0;
@@ -397,7 +397,7 @@ html.js .site-header.over-hero.solid {
 .hero-mark {
   width: clamp(220px, 40vw, 680px);
   color: var(--on-primary);
-  filter: drop-shadow(0 2px 24px rgb(60 48 46 / 0.35));
+  filter: drop-shadow(0 2px 24px rgb(64 51 44 / 0.35));
 }
 .hero-mark svg { width: 100%; height: auto; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; }
@@ -609,7 +609,7 @@ html.js-motion.mjs .reveal.settle { opacity: 1; translate: 0 0; transition: none
   background: var(--surface);
   border: 1px solid var(--border); border-radius: var(--radius);
   padding: 20px; pointer-events: none;
-  box-shadow: 0 12px 30px rgb(60 48 46 / 0.14);
+  box-shadow: 0 12px 30px rgb(64 51 44 / 0.14);
   opacity: 0; translate: 0 8px;
   transition: opacity 180ms var(--ease-ui), translate 180ms var(--ease-ui);
 }
@@ -623,7 +623,7 @@ html.js-motion.mjs .reveal.settle { opacity: 1; translate: 0 0; transition: none
   position: absolute; z-index: 90; width: min(300px, 80vw);
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 16px 20px;
-  box-shadow: 0 12px 30px rgb(60 48 46 / 0.14);
+  box-shadow: 0 12px 30px rgb(64 51 44 / 0.14);
   font-size: 0.875rem;
 }
 

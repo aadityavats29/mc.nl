@@ -43,9 +43,12 @@ implementing the consultation gate at the level a static site can.
 
 ## Provisional identity — needs owner sign-off
 
-- **Palette**: the September booking reference roles (ivory `#FFFDF9`, pale blush `#F4E7E4`,
-  blush `#CDA5A0`, burgundy `#5B1718`, dark brown `#3C302E`, muted `#806966`, border `#DFCBC6`).
-  Permitted by the design brief for a working prototype only. No final MC palette was ever selected.
+- **Palette**: Moodboard 2 · Terracotta, chosen by Vansh from the palette exploration pack on
+  20 Sep 2026. Documented archive colours warm beige `#D3C1BA`, taupe `#BAA195`, terracotta
+  `#914827`, plus derived working tones (canvas `#FBF7F3`, surface `#E9DCD4`, deep terracotta
+  `#7A3A1E`, ink `#40332C`, border `#DFCFC5`, muted `#7E6C61`). This replaces the provisional
+  September-booking burgundy/ivory set. The owner's final identity sign-off is still open; the
+  full pack lives in `_handoff/palettes/` if she wants to compare.
 - **Mark**: the concept-3 M/C monogram, extracted as an untouched vector path from the original
   artwork (`Maisson Coiffure_3.pdf` / `Maisson Coiffure_NEW.ai`), recoloured via CSS only.
 - **Wordmark spelling**: the original artwork spells "MAISSON COIFFURE"; the brief mandates
@@ -90,7 +93,7 @@ No before/after pairing is claimed anywhere, because pairing and direction were 
 
 ## Open content items (do not invent; awaiting owner)
 
-1. Final logo/palette selection and wordmark spelling (above).
+1. Final logo selection and wordmark spelling (above); owner confirmation of the terracotta palette.
 2. Owner display name and current qualification wording for About the Hairstylist. The supplied
    My Story text is presented in lightly trimmed form: the introductory-rate sentence ("Until my
    certification is complete, my treatments are available at lower rates…") is omitted because the
